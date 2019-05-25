@@ -9,9 +9,9 @@ import xml.etree.ElementTree as ET
 
 data_path = "../data/NSF/raw"
 outf_path = "../data/NSF/summary"
-nsf_api_prefix = "https://api.nsf.gov/services/v1/awards/"
 
-grant_div_name = {
+nsf_api_prefix = "https://api.nsf.gov/services/v1/awards/"
+nsf_grant_div_name = {
 "010": "Office of the Director",
 "020": "Office of Information &amp; Resource Mgmt",
 "030": "Directorate for Mathematical &amp; Physical Scien",
@@ -357,7 +357,7 @@ def count_numgrant_division_year(years):
             # if grant_type != "Standard Grant":
                 continue
             code = root.find("Award").find("Organization").find("Code").text[:3]
-            grant_div_type = grant_div_name[code] if code in grant_div_name else "Other"
+            grant_div_type = nsf_grant_div_name[code] if code in nsf_grant_div_name else "Other"
             grant_amount = int(root.find("Award").find("AwardAmount").text)
             ymap[year].append(grant_div_type)
             if grant_div_type in yamt[year]:
@@ -443,7 +443,7 @@ def count_pub_amount(year):
         grant_start = datetime.strptime(root.find("Award").find("AwardEffectiveDate").text, "%m/%d/%Y")
         grant_end = datetime.strptime(root.find("Award").find("AwardExpirationDate").text, "%m/%d/%Y")
         code = root.find("Award").find("Organization").find("Code").text[:3]
-        grant_div_type = grant_div_name[code] if code in grant_div_name else "Other"
+        grant_div_type = nsf_grant_div_name[code] if code in nsf_grant_div_name else "Other"
 
         num_pubs = 0
         pubs = json.load(open(os.path.join(path, "{}.json".format(award_id)), 'r'))
