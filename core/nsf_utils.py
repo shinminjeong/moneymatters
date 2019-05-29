@@ -3,9 +3,11 @@ import requests
 from core.search import *
 from collections import Counter
 from datetime import datetime
+from itertools import combinations
 import pandas as pd
 import numpy as np
 import xml.etree.ElementTree as ET
+import networkx as nx
 
 data_path = "../data/NSF/raw"
 outf_path = "../data/NSF/summary"
@@ -298,6 +300,75 @@ def num_publication_each_year(years):
             ",", sum(amount_multiple_diff)/len(amount_multiple_diff))
 
 
+
+
+def team_analysis(year):
+    sum_data = pd.read_csv(os.path.join(outf_path, "summary_{}.csv".format(year)))
+    pub_data = pd.read_csv(os.path.join(outf_path, "publication_{}.csv".format(year)))
+    # print(sum_data.id, pub_data.id)
+    dtype = dict(id=str)
+    concat_df = pd.merge(left=sum_data.astype(dtype), right=pub_data.astype(dtype), how="left", on="id")
+    # print(concat_df)
+    groups = concat_df.groupby(["year_x", "id", "title_x", "amount"])
+
+    data = {}
+    for name, value in groups:
+        papers = []
+        for p in value.title_y.values:
+            if str(p) != "nan":
+                papers.append(p.lower())
+        pis = list({(f, l) for f, l in zip(value.firstname.values, value.lastname.values)})
+        num_pis = len(set(value.email.values))
+        num_papers = len(set(papers)) # remove duplicated papers
+
+        G = nx.Graph()
+        save_authors = []
+        for str_authors in value.authors.values:
+            if str(str_authors) == "nan":
+                continue
+            authors = parse_authors(str_authors)
+            save_authors.append(authors)
+            # print(str_authors)
+            # for authors in str_authors.split()
+            for a1, a2 in combinations(authors, 2):
+                G.add_edge(a1, a2)
+            # print(authors)
+            # print()
+        ncc = nx.number_connected_components(G)
+        # if num_papers > 0:
+        #     print(name, num_papers, ncc)
+        #     if ncc > 3:
+        #         print("PIs:", pis)
+        #         print("Author sets: ", save_authors)
+        data[name[1]] = {
+            "year": name[0],
+            "title": name[2],
+            "amount": name[3],
+            # "pis": pis,
+            "num_pis": num_pis,
+            "num_cc": ncc,
+            "num_pubs": num_papers,
+            "team_size": [len(t) for t in list(nx.connected_components(G))] if ncc > 0 else [0]
+        }
+    # print(data)
+    return data
+
+
+def parse_authors(str_authors):
+    authors = []
+    if ";" in str_authors:
+        for s in str_authors.split(";"):
+            if s.strip() != "":
+                authors.append(s.strip())
+    else:
+        str_authors = str_authors.replace(", and", ",")
+        str_authors = str_authors.replace("and", ",")
+        for s in str_authors.split(","):
+            if s.strip() != "":
+                authors.append(s.strip())
+    return authors
+
+
 def check_files(years):
     for year in years:
         path = os.path.join(data_path, str(year))
@@ -451,7 +522,10 @@ def count_pub_amount(year):
             print("[No award error]", award_id)
             continue
         if len(pubs["response"]["award"]) > 0:
-            num_pubs = len(pubs["response"]["award"][0]["publicationResearch"])
+            if "publicationResearch" in pubs["response"]["award"][0]:
+                num_pubs = len(pubs["response"]["award"][0]["publicationResearch"])
+            if "publicationConference" in pubs["response"]["award"][0]:
+                num_pubs += len(pubs["response"]["award"][0]["publicationConference"])
         awards[award_id] = {
             "type": grant_type,
             "amount": grant_amount,
@@ -567,11 +641,14 @@ def grant_analysis(grant_id):
 
 if __name__ == '__main__':
     years = range(2000, 2020, 1)
-    count_numgrant_division_year(years)
+    # parse_publication([2013])
+    count_pub_amount(2013)
+    # count_numgrant_division_year(years)
     # count_numgrant_year(years)
-    # download_pub([2013, 2017])
+    # download_pub([2013])
     # t_hosking = [509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1832624, 1833291]
     # h_jagadish = [2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
     # download_pub_grant(h_jagadish)
     # for g in t_hosking:
     #     grant_analysis(g)
+    # team_analysis(2000)
