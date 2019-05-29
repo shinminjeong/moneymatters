@@ -35,7 +35,7 @@ def read_arc_grant_data():
             "id": id,
             "scheme": scheme.split(" ")[0] if type(pis) != float else None,
             "year": year,
-            "instutition": inst, "state": state,
+            "institution": inst, "state": state,
             "investigators": pis.split(";") if type(pis) != float else [],
             "pri_code": code,
             "div": desc[:2],
@@ -141,6 +141,7 @@ def count_pub_amount(year):
             "type": all_grant_data[award_id]["scheme"],
             "amount": int(all_grant_data[award_id]["amount"]),
             "div": all_grant_data[award_id]["div"],
+            "inst": all_grant_data[award_id]["institution"],
             "investigators": all_grant_data[award_id]["investigators"],
             "num_pubs": len(data),
             "authors": [a for t, a in data]
@@ -175,7 +176,9 @@ def team_analysis(year):
         data[id] = {
             "year": year,
             "amount": value["amount"],
+            "type": value["type"],
             # "pis": pis,
+            "inst": value["inst"],
             "num_pis": len(value["investigators"]),
             "num_cc": ncc,
             "num_pubs": value["num_pubs"],
@@ -189,6 +192,6 @@ if __name__ == '__main__':
     # for k, v in data.items():
     #     download_publications(k, v["year"])
         # print(arc_grant_analysis(k, v))
-    # for y in range(2009, 2019):
-    #     count_pub_amount(y)
-    team_analysis(2009)
+    for y in range(2002, 2019):
+        count_pub_amount(y)
+    # team_analysis(2009)

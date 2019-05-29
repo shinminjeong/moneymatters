@@ -321,6 +321,8 @@ def team_analysis(year):
         num_pis = len(set(value.email.values))
         num_papers = len(set(papers)) # remove duplicated papers
 
+        # print(set(value.institution.values))
+
         G = nx.Graph()
         save_authors = []
         for str_authors in value.authors.values:
@@ -344,7 +346,9 @@ def team_analysis(year):
             "year": name[0],
             "title": name[2],
             "amount": name[3],
+            "type": value.type.values[0],
             # "pis": pis,
+            "inst": value.institution.values[0],
             "num_pis": num_pis,
             "num_cc": ncc,
             "num_pubs": num_papers,
@@ -642,13 +646,13 @@ def grant_analysis(grant_id):
 if __name__ == '__main__':
     years = range(2000, 2020, 1)
     # parse_publication([2013])
-    count_pub_amount(2013)
+    # count_pub_amount(2013)
     # count_numgrant_division_year(years)
     # count_numgrant_year(years)
-    # download_pub([2013])
+    # download_pub([2014])
     # t_hosking = [509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1832624, 1833291]
     # h_jagadish = [2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
     # download_pub_grant(h_jagadish)
     # for g in t_hosking:
     #     grant_analysis(g)
-    # team_analysis(2000)
+    team_analysis(2000)
