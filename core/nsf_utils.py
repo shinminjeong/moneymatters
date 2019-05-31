@@ -623,7 +623,7 @@ def grant_analysis(grant_id):
                     nun_pubs += 1
                     titles.append(title.lower())
                     # print(authors, title, venue, pyear)
-                    num_authors.append(len(authors.split(",")))
+                    num_authors.append(len(parse_authors(authors)))
                     # print(year, title, "number of authors =", len(authors.split(",")))
                     paper_info = es_search_paper_title(title)
                     num_citations.append(paper_info["CitationCount"])
@@ -642,6 +642,48 @@ def grant_analysis(grant_id):
         return None
 
 
+def publication_analysis(grant_id, title_printout=True):
+    year, award_id = get_grant_year_id(grant_id)
+    path = os.path.join(data_path, str(year), award_id)
+    titles = []
+    publications = json.load(open("{}.json".format(path), "r"))
+    G = nx.Graph()
+    dup_title = 0
+    if publications["response"]["award"]:
+        pubs = publications["response"]["award"][0]["publicationResearch"]
+        if "publicationConference" in publications["response"]["award"][0]:
+            pubs.extend(publications["response"]["award"][0]["publicationConference"])
+        for p in pubs:
+            pinfo = p.split("~")
+            authors_str = pinfo[0]
+            title = pinfo[1]
+            venue = pinfo[2]
+            version = pinfo[3]
+            pyear = pinfo[4]
+            norm_title = title.lower().replace(".", "").replace(" ", "")
+            if norm_title in titles:
+                dup_title += 1
+                continue
+            titles.append(norm_title)
+            # authors = parse_authors(authors_str)
+            # print(len(authors), authors)
+            paper_info = es_search_paper_title(title)
+            # print(paper_info["PaperId"])
+            authors = es_search_authors_from_pid(paper_info["PaperId"])
+            mag_authors = []
+            for au in authors:
+                aname = es_search_author_name(au["AuthorId"])["DisplayName"]
+                # print(aname)
+                mag_authors.append(aname)
+            if title_printout:
+                print(len(mag_authors), mag_authors, title)
+            # num_citations = paper_info["CitationCount"]
+            for a1, a2 in combinations(mag_authors, 2):
+                G.add_edge(a1, a2)
+    ncc = nx.number_connected_components(G)
+    # print(G.edges())
+    return dup_title, len(titles), G
+
 
 if __name__ == '__main__':
     years = range(2000, 2020, 1)
@@ -649,10 +691,16 @@ if __name__ == '__main__':
     # count_pub_amount(2013)
     # count_numgrant_division_year(years)
     # count_numgrant_year(years)
-    # download_pub([2014])
+    # download_pub([2002,2004])
     # t_hosking = [509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1832624, 1833291]
     # h_jagadish = [2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
     # download_pub_grant(h_jagadish)
     # for g in t_hosking:
     #     grant_analysis(g)
-    team_analysis(2000)
+    # team_analysis(2000)
+    # publication_analysis(1157698) # 954 publications
+    # publication_analysis(719966) # 107 publications (Books and one time proceeding)
+    # publication_analysis(1027253) # 430 publications
+    # publication_analysis(1017296) # 18 publications (h v jagadish)
+    # publication_analysis(540866) # 10 publicatoin (tony hosking)
+    publication_analysis(934218)
