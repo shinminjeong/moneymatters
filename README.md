@@ -9,8 +9,8 @@
 
 NSF grant has 3 types of outcome:
 (1) PUBLICATIONS PRODUCED AS A RESULT OF THIS RESEARCH, (2) CONFERENCE PROCEEDINGS PRODUCED AS A RESULT OF THIS RESEARCH
-and (3) BOOKS/ONE TIME PROCEEDING.
-However, the Award search API only supports (1) and (2), not (3).
+and (3) BOOKS/ONE TIME PROCEEDING.<br/>
+However, the Award search API currently (June 2019) only supports (1) and (2), not (3).
 
 Grant page has the info, but in unstructured format.<br/>
 e.g. https://www.nsf.gov/awardsearch/showAward?AWD_ID=0702240
@@ -27,7 +27,7 @@ e.g. https://www.nsf.gov/awardsearch/showAward?AWD_ID=1151640 (2/559)
 
 WHILE most grants include their own publications.<br/>
 e.g. https://www.nsf.gov/awardsearch/showAward?AWD_ID=1027253 (270/430)<br/>
-https://www.nsf.gov/awardsearch/showAward?AWD_ID=1017296 (18/18)
+https://www.nsf.gov/awardsearch/showAward?AWD_ID=9726401 (78/85)
 
 
 ### Australian Research Council (ARC)
