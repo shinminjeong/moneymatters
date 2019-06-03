@@ -1,9 +1,11 @@
 import os,sys,json
 import requests
 from core.search import *
+from core.generator import *
 from collections import Counter
 from datetime import datetime
 from itertools import combinations
+from multiprocessing import Pool
 import pandas as pd
 import numpy as np
 import xml.etree.ElementTree as ET
@@ -450,19 +452,6 @@ def load_grant_data(filename):
     data = json.load(open(os.path.join(data_path, filename), 'r'))
     return data
 
-
-# return year, id from grant_id
-def get_grant_year_id(grant_id):
-    gid = int(grant_id)
-    year_2digit = int(gid/100000)
-    # print(year_2digit)
-    if year_2digit < 20:
-        year = 2000+year_2digit
-    else:
-        year = 1900+year_2digit
-    award_id = "{:07d}".format(gid)
-    return year, award_id
-
 # download publication of a list of grants
 def download_pub_grant(grant_ids):
     for gid in grant_ids:
@@ -642,47 +631,15 @@ def grant_analysis(grant_id):
         return None
 
 
-def publication_analysis(grant_id, title_printout=True):
-    year, award_id = get_grant_year_id(grant_id)
-    path = os.path.join(data_path, str(year), award_id)
-    titles = []
-    publications = json.load(open("{}.json".format(path), "r"))
-    G = nx.Graph()
-    dup_title = 0
-    if publications["response"]["award"]:
-        pubs = publications["response"]["award"][0]["publicationResearch"]
-        if "publicationConference" in publications["response"]["award"][0]:
-            pubs.extend(publications["response"]["award"][0]["publicationConference"])
-        for p in pubs:
-            pinfo = p.split("~")
-            authors_str = pinfo[0]
-            title = pinfo[1]
-            venue = pinfo[2]
-            version = pinfo[3]
-            pyear = pinfo[4]
-            norm_title = title.lower().replace(".", "").replace(" ", "")
-            if norm_title in titles:
-                dup_title += 1
-                continue
-            titles.append(norm_title)
-            # authors = parse_authors(authors_str)
-            # print(len(authors), authors)
-            paper_info = es_search_paper_title(title)
-            # print(paper_info["PaperId"])
-            authors = es_search_authors_from_pid(paper_info["PaperId"])
-            mag_authors = []
-            for au in authors:
-                aname = es_search_author_name(au["AuthorId"])["DisplayName"]
-                # print(aname)
-                mag_authors.append(aname)
-            if title_printout:
-                print(len(mag_authors), mag_authors, title)
-            # num_citations = paper_info["CitationCount"]
-            for a1, a2 in combinations(mag_authors, 2):
-                G.add_edge(a1, a2)
-    ncc = nx.number_connected_components(G)
-    # print(G.edges())
-    return dup_title, len(titles), G
+thread_pool = Pool(8)
+def publication_analysis(grant_id, title_printout=False):
+    award = CleanedNSFAward(grant_id, thread_pool)
+    award.read_grant_meta_info()
+    award.read_grant_publications(title_printout=title_printout)
+    G = award.generate_G()
+    dup_title, num_papers = award.get_num_titles()
+    pis = award.get_investigator_names()
+    return dup_title, dup_title+num_papers, G, pis
 
 
 if __name__ == '__main__':
@@ -703,4 +660,5 @@ if __name__ == '__main__':
     # publication_analysis(1027253) # 430 publications
     # publication_analysis(1017296) # 18 publications (h v jagadish)
     # publication_analysis(540866) # 10 publicatoin (tony hosking)
-    publication_analysis(934218)
+    # publication_analysis(922742)
+    print(publication_analysis("0922742", title_printout=True))
