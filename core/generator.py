@@ -50,27 +50,55 @@ class CleanedNSFAward:
             "awardTitle": "",
             "awardInstrument": "",
             "awardAmount": 0,
+            "directorate": "",
             "organization": "",
             "startTime": "",
             "endTime": "",
             "investigators": [],
             "institution": "",
+            "numPublications": 0,
             "publicationResearch": [],
             "publicationConference": [],
         }
 
     def add_investigator(self, fname, lname, eaddr, role):
-        author = es_author_normalize(fname, lname)
-        # print("[add_investigator]", fname, lname, author)
         self.award["investigators"].append({
             "firstName": fname,
             "lastName": lname,
             "emailAddress": eaddr,
-            "role": role,
-            "authorId": author["AuthorId"],
-            "normalizedName": author["NormalizedName"],
-            "displayName": author["DisplayName"],
+            "role": role
         })
+
+    def normalize_investigator(self):
+        author_set = self.get_author_set()
+        # print(author_set)
+        for pi in self.award["investigators"]:
+            count = 0
+            fn = pi["firstName"].lower()
+            ln = pi["lastName"].lower()
+            same_author = None
+            for author in author_set:
+                author_lower = author[2].lower()
+                if fn in author_lower and ln in author_lower:
+                    # both first and last name in the author list
+                    count += 1
+                    same_author = author
+                    # print(pi["firstName"], pi["lastName"], author)
+                elif fn[0] in [a[0] for a in author_lower.split(" ")] and ln in author_lower:
+                    # first initial and last name in the author list
+                    count += 1
+                    same_author = author
+                    # print(pi["firstName"], pi["lastName"], author)
+            if count == 1:
+                pi["authorId"] = same_author[0]
+                pi["normalizedName"] = same_author[1]
+                pi["displayName"] = same_author[2]
+            else:
+                same_author = es_author_normalize("{} {}".format(fn, ln))
+                pi["authorId"] = same_author["AuthorId"]
+                pi["normalizedName"] = same_author["NormalizedName"]
+                pi["displayName"] = same_author["DisplayName"]
+
 
     def read_grant_meta_info(self):
         path = os.path.join(data_path, str(self.award["year"]), "{}.xml".format(self.award["id_str"]))
@@ -91,7 +119,7 @@ class CleanedNSFAward:
 
             investigators = award.findall("Investigator")
             if not investigators:
-                print("No investigator", award_id)
+                print("No investigator", self.award["id_str"])
                 pass
             for investigator in investigators:
                 inv_fname = inv_lname = inv_eaddr = inv_role = ""
@@ -115,7 +143,8 @@ class CleanedNSFAward:
             "year": paper_info["Year"],
             "journalId": paper_info["JournalId"] if "JournalId" in paper_info else None,
             "conferenceId": paper_info["ConferenceSeriesId"] if "ConferenceSeriesId" in paper_info else None,
-            "authors": []
+            "authors": [],
+            "citationCount": paper_info["CitationCount"]
         }
         for author in authors:
             publication["authors"].append({
@@ -125,7 +154,7 @@ class CleanedNSFAward:
             })
         self.award[pub_type].append(publication)
 
-    def read_grant_publications(self, title_printout=False):
+    def read_grant_publications(self, mag_search=True, title_printout=False):
         path = os.path.join(data_path, str(self.award["year"]), "{}.json".format(self.award["id_str"]))
         publications = json.load(open(path, "r"))
         titles = []
@@ -149,6 +178,8 @@ class CleanedNSFAward:
                         titles.append(norm_title)
                         original_titles.append((pub_str, title.lower()))
 
+                    if not mag_search:
+                        continue
                     if self.thread_pool != None:
                         searched_papers = self.thread_pool.map(get_paper_information, original_titles)
                         for pub_str, paper_info, mag_authors in searched_papers:
@@ -161,13 +192,26 @@ class CleanedNSFAward:
                             if title_printout:
                                 print([a["DisplayName"] for a in mag_authors], paper_info["PaperTitle"])
                             self.add_publication(pub_type, pub_str, paper_info, mag_authors)
+        self.award["numPublications"] = len(titles)
+
+
+    def get_award_info(self):
+        return self.award
+
+    def get_author_set(self):
+        author_set = set()
+        for pub_type in ["publicationResearch", "publicationConference"]:
+            for pub in self.award[pub_type]:
+                for a1 in pub["authors"]:
+                    author_set.add((a1["authorId"], a1["normalizedName"], a1["displayName"]))
+        return author_set
 
     def generate_G(self):
         G = nx.Graph()
         for pub_type in ["publicationResearch", "publicationConference"]:
             for pub in self.award[pub_type]:
                 for a1, a2 in combinations(pub["authors"], 2):
-                    G.add_edge(a1["displayName"], a2["displayName"])
+                    G.add_edge(a1["displayName"], a2["displayName"]),
         return G
 
     def get_investigator_names(self):

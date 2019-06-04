@@ -47,16 +47,16 @@ def es_search_author_name(authorid):
     return data
 
 
-def es_author_normalize(firstname, lastname):
+def es_author_normalize(name):
     client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="authors")
-    s = s.query("match", NormalizedName="{} {}"
-        .format(firstname.lower().replace("-", ""), lastname.lower().replace("-", "")))
-    s = s.params(size=30)
+    s = s.query("match", NormalizedName=name)
+    s = s.params(size=500)
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
     sorted_list = sorted([s["_source"] for s in result if s["_score"] > 13], key=itemgetter("Rank"))
-    # print(firstname, lastname)
+    sorted_list = sorted(sorted_list, key=itemgetter("PaperCount"), reverse=True)
+    # print(name)
     # print(sorted_list)
     data = {}
     if result:

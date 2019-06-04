@@ -29,6 +29,8 @@ nsf_grant_div_name = {
 "120": "National Coordination Office"
 }
 
+thread_pool = Pool(8)
+
 def search_grant_data(query, years):
     # query = {key1: value, key2: value}
     data = []
@@ -469,8 +471,8 @@ def download_pub(years):
         path = os.path.join(data_path, str(year))
         for filename in sorted(os.listdir(path)):
             award_id, file_format = filename.split(".")
-            if file_format == "json" or os.path.isfile(os.path.join(path, "{}.json".format(award_id))):
-            # if file_format == "json":
+            # if file_format == "json" or os.path.isfile(os.path.join(path, "{}.json".format(award_id))):
+            if file_format == "json":
                 continue
             print(award_id)
             rsp = query_nsf(award_id)
@@ -498,34 +500,23 @@ def count_pub_amount(year):
         if file_format == "json":
             continue
         try:
-            root = ET.parse(os.path.join(data_path, str(year), filename)).getroot()
+            print("count_pub_amount", award_id)
+            award = CleanedNSFAward(award_id)
+            award.read_grant_meta_info()
+            award.read_grant_publications(mag_search=False)
+            data = award.get_award_info()
+            awards[award_id] = {
+                "year": data["year"],
+                "type": data["awardInstrument"],
+                "amount": data["awardAmount"],
+                "div": nsf_grant_div_name[data["organization"][:3]],
+                "org": data["organization"],
+                "num_pubs": data["numPublications"],
+                "duration": (datetime.strptime(data["endTime"], "%m/%d/%Y")-datetime.strptime(data["startTime"], "%m/%d/%Y")).days
+            }
         except:
             # print("[ET parse error]", os.path.join(data_path, str(year), filename))
             continue
-        grant_type = root.find("Award").find("AwardInstrument").find("Value").text
-        grant_amount = int(root.find("Award").find("AwardAmount").text)
-        grant_start = datetime.strptime(root.find("Award").find("AwardEffectiveDate").text, "%m/%d/%Y")
-        grant_end = datetime.strptime(root.find("Award").find("AwardExpirationDate").text, "%m/%d/%Y")
-        code = root.find("Award").find("Organization").find("Code").text[:3]
-        grant_div_type = nsf_grant_div_name[code] if code in nsf_grant_div_name else "Other"
-
-        num_pubs = 0
-        pubs = json.load(open(os.path.join(path, "{}.json".format(award_id)), 'r'))
-        if "award" not in pubs["response"]:
-            print("[No award error]", award_id)
-            continue
-        if len(pubs["response"]["award"]) > 0:
-            if "publicationResearch" in pubs["response"]["award"][0]:
-                num_pubs = len(pubs["response"]["award"][0]["publicationResearch"])
-            if "publicationConference" in pubs["response"]["award"][0]:
-                num_pubs += len(pubs["response"]["award"][0]["publicationConference"])
-        awards[award_id] = {
-            "type": grant_type,
-            "amount": grant_amount,
-            "div": grant_div_type,
-            "num_pubs": num_pubs,
-            "duration": (grant_end-grant_start).days
-        }
     outfile = open(os.path.join(path, "numpub.json"), 'w')
     json.dump(awards, outfile)
 
@@ -631,24 +622,32 @@ def grant_analysis(grant_id):
         return None
 
 
-thread_pool = Pool(8)
 def publication_analysis(grant_id, title_printout=False):
     award = CleanedNSFAward(grant_id, thread_pool)
     award.read_grant_meta_info()
     award.read_grant_publications(title_printout=title_printout)
+    award.normalize_investigator()
     G = award.generate_G()
     dup_title, num_papers = award.get_num_titles()
     pis = award.get_investigator_names()
     return dup_title, dup_title+num_papers, G, pis
 
 
+def get_grant_publications(grant_id):
+    award = CleanedNSFAward(grant_id)
+    award.read_grant_meta_info()
+    award.read_grant_publications()
+    return award.get_award_info()
+
+
 if __name__ == '__main__':
-    years = range(2000, 2020, 1)
+    years = range(2000, 2005, 1)
+    # download_pub(years)
     # parse_publication([2013])
-    # count_pub_amount(2013)
+    for y in years:
+        count_pub_amount(y)
     # count_numgrant_division_year(years)
     # count_numgrant_year(years)
-    # download_pub([2002,2004])
     # t_hosking = [509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1832624, 1833291]
     # h_jagadish = [2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
     # download_pub_grant(h_jagadish)
@@ -661,4 +660,4 @@ if __name__ == '__main__':
     # publication_analysis(1017296) # 18 publications (h v jagadish)
     # publication_analysis(540866) # 10 publicatoin (tony hosking)
     # publication_analysis(922742)
-    print(publication_analysis("0922742", title_printout=True))
+    # print(publication_analysis("1017296", title_printout=False))
