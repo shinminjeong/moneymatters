@@ -466,13 +466,14 @@ def download_pub_grant(grant_ids):
 
 
 # download all publications of year
-def download_pub(years):
+def download_pub(years, after):
     for year in years:
         path = os.path.join(data_path, str(year))
         for filename in sorted(os.listdir(path)):
             award_id, file_format = filename.split(".")
+            print(award_id, after)
             # if file_format == "json" or os.path.isfile(os.path.join(path, "{}.json".format(award_id))):
-            if file_format == "json":
+            if award_id < after or file_format == "json":
                 continue
             print(award_id)
             rsp = query_nsf(award_id)
@@ -502,8 +503,7 @@ def count_pub_amount(year):
         try:
             print("count_pub_amount", award_id)
             award = CleanedNSFAward(award_id)
-            award.read_grant_meta_info()
-            award.read_grant_publications(mag_search=False)
+            award.generate_award_info(mag_search=False)
             data = award.get_award_info()
             awards[award_id] = {
                 "year": data["year"],
@@ -635,14 +635,13 @@ def publication_analysis(grant_id, title_printout=False):
 
 def get_grant_publications(grant_id):
     award = CleanedNSFAward(grant_id)
-    award.read_grant_meta_info()
-    award.read_grant_publications()
+    award.generate_award_info()
     return award.get_award_info()
 
 
 if __name__ == '__main__':
-    years = range(2000, 2005, 1)
-    # download_pub(years)
+    years = range(2009, 2010, 1)
+    # download_pub(years, "0942454")
     # parse_publication([2013])
     for y in years:
         count_pub_amount(y)

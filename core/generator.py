@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 import networkx as nx
 
 data_path = "../data/NSF/raw"
+cache_path = "../data/NSF/cache"
 
 def get_grant_year_id(grant_id):
     gid = int(grant_id)
@@ -42,24 +43,37 @@ def get_paper_information(data):
 class CleanedNSFAward:
     def __init__(self, grant_id, thread_pool=None):
         self.thread_pool = thread_pool
-        year, id_str = get_grant_year_id(grant_id)
-        self.award = {
-            "year": year,
-            "id": int(id_str),
-            "id_str": id_str,
-            "awardTitle": "",
-            "awardInstrument": "",
-            "awardAmount": 0,
-            "directorate": "",
-            "organization": "",
-            "startTime": "",
-            "endTime": "",
-            "investigators": [],
-            "institution": "",
-            "numPublications": 0,
-            "publicationResearch": [],
-            "publicationConference": [],
-        }
+        self.grant_id = grant_id
+
+
+    def generate_award_info(self, mag_search=True):
+        self.mag_search = mag_search
+        year, id_str = get_grant_year_id(self.grant_id)
+        cache_file = os.path.join(cache_path, str(year), "{}.json".format(id_str))
+        if os.path.isfile(cache_file):
+        # if False:
+            # print("cache file exist", year, id_str)
+            self.award = json.load(open(cache_file, "r"))
+        else:
+            self.award = {
+                "year": year,
+                "id": int(id_str),
+                "id_str": id_str,
+                "awardTitle": "",
+                "awardInstrument": "",
+                "awardAmount": 0,
+                "directorate": "",
+                "organization": "",
+                "startTime": "",
+                "endTime": "",
+                "investigators": [],
+                "institution": "",
+                "numPublications": 0,
+                "publicationResearch": [],
+                "publicationConference": [],
+            }
+            self.read_grant_meta_info()
+            self.read_grant_publications(mag_search=mag_search)
 
     def add_investigator(self, fname, lname, eaddr, role):
         self.award["investigators"].append({
@@ -144,7 +158,8 @@ class CleanedNSFAward:
             "journalId": paper_info["JournalId"] if "JournalId" in paper_info else None,
             "conferenceId": paper_info["ConferenceSeriesId"] if "ConferenceSeriesId" in paper_info else None,
             "authors": [],
-            "citationCount": paper_info["CitationCount"]
+            "citationCount": paper_info["CitationCount"],
+            "estCitation": paper_info["EstimatedCitation"]
         }
         for author in authors:
             publication["authors"].append({
@@ -195,7 +210,14 @@ class CleanedNSFAward:
         self.award["numPublications"] = len(titles)
 
 
+    def save_award_info(self):
+        outfile = open(os.path.join(cache_path, str(self.award["year"]), "{}.json".format(self.award["id_str"])), 'w')
+        json.dump(self.award, outfile)
+
+
     def get_award_info(self):
+        if self.mag_search: # only save cache if it includes MAG ids
+            self.save_award_info()
         return self.award
 
     def get_author_set(self):
