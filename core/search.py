@@ -14,7 +14,7 @@ def es_search_paper_title(title):
     if result:
         data = result[0]["_source"]
     else:
-        print("[es_search_paper_title] no result")
+        print("[es_search_paper_title] no result", title)
     return data
 
 def es_search_authors_from_pid(paperid):
@@ -28,7 +28,7 @@ def es_search_authors_from_pid(paperid):
     if result:
         data = [{c:res["_source"][c] for c in cols} for res in result]
     else:
-        print("[es_search_paper_title] no result")
+        print("[es_search_authors_from_pid] no result", paperid)
     return data
 
 
@@ -43,7 +43,7 @@ def es_search_author_name(authorid):
     if result:
         data = {c:result[0]["_source"][c] for c in cols}
     else:
-        print("[es_search_paper_title] no result")
+        print("[es_search_author_name] no result", authorid)
     return data
 
 
@@ -62,5 +62,5 @@ def es_author_normalize(name):
     if result:
         data = sorted_list[0]
     else:
-        print("[es_search_paper_title] no result")
+        print("[es_author_normalize] no result", name)
     return data
