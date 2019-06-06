@@ -103,6 +103,7 @@ class CleanedNSFAward:
                     count += 1
                     same_author = author
                     # print(pi["firstName"], pi["lastName"], author)
+            # print(count, same_author)
             if count == 1:
                 pi["authorId"] = same_author[0]
                 pi["normalizedName"] = same_author[1]
@@ -215,7 +216,6 @@ class CleanedNSFAward:
                             self.add_publication(pub_type, pub_str, paper_info, mag_authors)
         self.award["numPublications"] = len(titles)
 
-
     def save_award_info(self):
         outfile = open(os.path.join(cache_path, str(self.award["year"]), "{}.json".format(self.award["id_str"])), 'w')
         json.dump(self.award, outfile)
@@ -228,16 +228,34 @@ class CleanedNSFAward:
 
     def get_author_set(self):
         author_set = set()
+        award = self.get_award_info()
         for pub_type in ["publicationResearch", "publicationConference"]:
-            for pub in self.award[pub_type]:
+            for pub in award[pub_type]:
                 for a1 in pub["authors"]:
                     author_set.add((a1["authorId"], a1["normalizedName"], a1["displayName"]))
         return author_set
 
-    def generate_G(self):
+    def generate_pi_G(self):
         G = nx.Graph()
+        award = self.get_award_info()
+        for pi in award["investigators"]:
+            # if pi["authorId"] in [a[0] for a in self.get_author_set()]:
+            G.add_node(pi["displayName"], norm=pi["normalizedName"], id=pi["authorId"])
+        pis = [pi["authorId"] for pi in award["investigators"]]
+        # print(pis)
         for pub_type in ["publicationResearch", "publicationConference"]:
-            for pub in self.award[pub_type]:
+            for pub in award[pub_type]:
+                # print(pub["paperId"], pub["paperTitle"], pub["authors"])
+                for a1, a2 in combinations(pub["authors"], 2):
+                    if a1["authorId"] in pis and a2["authorId"] in pis:
+                        G.add_edge(a1["displayName"], a2["displayName"], paper=pub["paperId"]),
+        return G
+
+    def generate_author_G(self):
+        G = nx.Graph()
+        award = self.get_award_info()
+        for pub_type in ["publicationResearch", "publicationConference"]:
+            for pub in award[pub_type]:
                 for a1, a2 in combinations(pub["authors"], 2):
                     G.add_edge(a1["displayName"], a2["displayName"]),
         return G
@@ -248,7 +266,7 @@ class CleanedNSFAward:
     def get_num_titles(self):
         num_pub_research = len(self.award["publicationResearch"])
         num_pub_conference = len(self.award["publicationConference"])
-        return self.dup_title, num_pub_research+num_pub_conference
+        return num_pub_research+num_pub_conference
 
     def print_award(self):
         print(json.dumps(self.award))

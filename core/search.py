@@ -32,6 +32,19 @@ def es_search_authors_from_pid(paperid):
     return data
 
 
+def es_search_papers_from_aid(authorid):
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="paperauthoraffiliations")
+    s = s.query("match", AuthorId=authorid)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    data = []
+    if result:
+        data = [res["_source"]["PaperId"] for res in result]
+    else:
+        print("[es_search_papers_from_authorid] no result", authorid)
+    return data
+
 def es_search_author_name(authorid):
     client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="authors")
@@ -48,6 +61,8 @@ def es_search_author_name(authorid):
 
 
 def es_author_normalize(name):
+    name = name.replace("-", "")
+    name = name.replace("'", "")
     client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="authors")
     s = s.query("match", NormalizedName=name)
@@ -55,12 +70,14 @@ def es_author_normalize(name):
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
     sorted_list = sorted([s["_source"] for s in result if s["_score"] > 13], key=itemgetter("Rank"))
+    if len(sorted_list) == 0:
+        sorted_list = sorted([s["_source"] for s in result], key=itemgetter("Rank"))
     sorted_list = sorted(sorted_list, key=itemgetter("PaperCount"), reverse=True)
     # print(name)
     # print(sorted_list)
     data = {}
-    if result:
+    try:
         data = sorted_list[0]
-    else:
-        print("[es_author_normalize] no result", name)
+    except Exception as e:
+        print("[es_author_normalize] no result", name, e)
     return data

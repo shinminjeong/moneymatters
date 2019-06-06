@@ -512,6 +512,7 @@ def count_pub_amount(year):
                 "div": nsf_grant_div_name[data["organization"][:3]],
                 "org": data["organization"],
                 "num_pubs": data["numPublications"],
+                "num_pis": len(data["investigators"]),
                 "duration": (datetime.strptime(data["endTime"], "%m/%d/%Y")-datetime.strptime(data["startTime"], "%m/%d/%Y")).days
             }
         except:
@@ -624,13 +625,12 @@ def grant_analysis(grant_id):
 
 def publication_analysis(grant_id, title_printout=False):
     award = CleanedNSFAward(grant_id, thread_pool)
-    award.read_grant_meta_info()
-    award.read_grant_publications(title_printout=title_printout)
+    award.generate_award_info()
     award.normalize_investigator()
-    G = award.generate_G()
-    dup_title, num_papers = award.get_num_titles()
+    G = award.generate_author_G()
+    num_papers = award.get_num_titles()
     pis = award.get_investigator_names()
-    return dup_title, dup_title+num_papers, G, pis
+    return dup_title+num_papers, G, pis
 
 
 def get_grant_publications(grant_id):
@@ -640,11 +640,10 @@ def get_grant_publications(grant_id):
 
 
 if __name__ == '__main__':
-    years = range(2009, 2010, 1)
-    # download_pub(years, "0942454")
+    years = range(2010, 2012, 1)
+    # download_pub(years, "1005493")
     # parse_publication([2013])
-    for y in years:
-        count_pub_amount(y)
+    count_pub_amount(2004)
     # count_numgrant_division_year(years)
     # count_numgrant_year(years)
     # t_hosking = [509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1832624, 1833291]
@@ -659,4 +658,4 @@ if __name__ == '__main__':
     # publication_analysis(1017296) # 18 publications (h v jagadish)
     # publication_analysis(540866) # 10 publicatoin (tony hosking)
     # publication_analysis(922742)
-    # print(publication_analysis("1017296", title_printout=False))
+    # print(publication_analysis("0910584", title_printout=False))
