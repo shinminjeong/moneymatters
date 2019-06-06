@@ -36,7 +36,7 @@ def get_paper_information(data):
             mag_authors.append(author)
     except Exception as e:
         print("Error:", title)
-        return None, []
+        return rawstr, None, []
     return rawstr, paper_info, mag_authors
 
 
@@ -150,23 +150,29 @@ class CleanedNSFAward:
     def add_publication(self, pub_type, raw_str, paper_info, authors):
         # print(raw_str)
         # print(paper_info["PaperTitle"], paper_info["Year"])
-        publication = {
-            "raw_string": raw_str,
-            "paperTitle": paper_info["PaperTitle"],
-            "paperId": paper_info["PaperId"],
-            "year": paper_info["Year"],
-            "journalId": paper_info["JournalId"] if "JournalId" in paper_info else None,
-            "conferenceId": paper_info["ConferenceSeriesId"] if "ConferenceSeriesId" in paper_info else None,
-            "authors": [],
-            "citationCount": paper_info["CitationCount"],
-            "estCitation": paper_info["EstimatedCitation"]
-        }
-        for author in authors:
-            publication["authors"].append({
-                "authorId": author["AuthorId"],
-                "normalizedName": author["NormalizedName"],
-                "displayName": author["DisplayName"],
-            })
+        if paper_info:
+            publication = {
+                "raw_string": raw_str,
+                "paperTitle": paper_info["PaperTitle"],
+                "paperId": paper_info["PaperId"],
+                "year": paper_info["Year"],
+                "journalId": paper_info["JournalId"] if "JournalId" in paper_info else None,
+                "conferenceId": paper_info["ConferenceSeriesId"] if "ConferenceSeriesId" in paper_info else None,
+                "authors": [],
+                "citationCount": paper_info["CitationCount"],
+                "estCitation": paper_info["EstimatedCitation"]
+            }
+            for author in authors:
+                publication["authors"].append({
+                    "authorId": author["AuthorId"],
+                    "normalizedName": author["NormalizedName"],
+                    "displayName": author["DisplayName"],
+                })
+        else:
+            publication = {
+                "raw_string": raw_str,
+                "authors": [],
+            }
         self.award[pub_type].append(publication)
 
     def read_grant_publications(self, mag_search=True, title_printout=False):
