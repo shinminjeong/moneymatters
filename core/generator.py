@@ -236,7 +236,7 @@ class CleanedNSFAward:
         return author_set
 
     def generate_pi_G(self):
-        G = nx.Graph()
+        G = nx.MultiGraph()
         award = self.get_award_info()
         for pi in award["investigators"]:
             # if pi["authorId"] in [a[0] for a in self.get_author_set()]:

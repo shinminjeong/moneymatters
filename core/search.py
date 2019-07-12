@@ -21,6 +21,7 @@ def es_search_authors_from_pid(paperid):
     client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="paperauthoraffiliations")
     s = s.query("match", PaperId=paperid)
+    s = s.params(size=1000)
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
     cols = ["AuthorId"]
@@ -31,11 +32,24 @@ def es_search_authors_from_pid(paperid):
         print("[es_search_authors_from_pid] no result", paperid)
     return data
 
+def es_search_paper_from_pid(paperid):
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="papers")
+    s = s.query("match", PaperId=paperid)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    data = None
+    if result:
+        data = result[0]["_source"]
+    else:
+        print("[es_search_authors_from_pid] no result", paperid)
+    return data
 
 def es_search_papers_from_aid(authorid):
     client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="paperauthoraffiliations")
     s = s.query("match", AuthorId=authorid)
+    s = s.params(size=1000)
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
     data = []
