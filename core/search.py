@@ -1,5 +1,5 @@
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Search, Q
 from operator import itemgetter
 
 ES_SERVER = "130.56.249.107:9200"
@@ -73,6 +73,43 @@ def es_search_author_name(authorid):
         print("[es_search_author_name] no result", authorid)
     return data
 
+
+def es_get_paper_conf_year(confid, year):
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="papers")
+    s = s.query(Q('bool', must=[Q('match', ConferenceSeriesId=confid), Q('match', Year=year)]))
+    s = s.params(size=500)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    return result
+
+
+def es_get_paper_fos(paperids):
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="paperfieldsofstudy")
+    s = s.query("terms", PaperId=paperids)
+    s = s.params(size=500)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    return result
+
+def es_get_paper_fos(paperids):
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="paperfieldsofstudy")
+    s = s.query("terms", PaperId=paperids)
+    s = s.params(size=500)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    return result
+
+def es_get_fos_level(fosids):
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="fieldsofstudy")
+    s = s.query("terms", FieldOfStudyId=fosids)
+    s = s.params(size=500)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    return result
 
 def es_author_normalize(name):
     name = name.replace("-", "")
