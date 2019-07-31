@@ -3,7 +3,7 @@ import requests
 from core.search import *
 
 yearmap = {}
-ranges = (range(1994,1999), range(1999,2004), range(2004,2009), range(2009,2014), range(2014,2019))
+ranges = (range(1990,2000), range(2000,2010), range(2010,2020))
 for range in ranges:
     aggfos = {}
     totalp = 0

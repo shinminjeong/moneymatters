@@ -2,7 +2,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, Q
 from operator import itemgetter
 
-ES_SERVER = "130.56.249.107:9200"
+ES_SERVER = "130.56.248.215:9200"
 
 def es_search_paper_title(title):
     client = Elasticsearch(ES_SERVER, request_timeout=60)
@@ -65,7 +65,7 @@ def es_search_author_name(authorid):
     s = s.query("match", AuthorId=authorid)
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
-    cols = ["AuthorId", "DisplayName", "NormalizedName"]
+    cols = ["AuthorId", "DisplayName", "NormalizedName", "PaperCount", "CitationCount"]
     data = {}
     if result:
         data = {c:result[0]["_source"][c] for c in cols}

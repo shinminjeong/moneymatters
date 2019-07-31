@@ -46,11 +46,12 @@ class CleanedNSFAward:
         self.grant_id = grant_id
 
 
-    def generate_award_info(self, mag_search=True):
+    def generate_award_info(self, mag_search=True, force=False):
         self.mag_search = mag_search
         year, id_str = get_grant_year_id(self.grant_id)
         cache_file = os.path.join(cache_path, str(year), "{}.json".format(id_str))
-        if os.path.isfile(cache_file):
+        if os.path.isfile(cache_file) and not force:
+        # and (datetime.fromtimestamp(os.path.getmtime(cache_file))-datetime.now()).days < -3:
         # if False:
             # print("cache file exist", year, id_str)
             self.award = json.load(open(cache_file, "r"))
@@ -92,6 +93,7 @@ class CleanedNSFAward:
             ln = pi["lastName"].lower()
             same_author = None
             for author in author_set:
+                # print("normalize_investigator", author)
                 author_lower = author[2].lower()
                 if fn in author_lower and ln in author_lower:
                     # both first and last name in the author list
@@ -108,11 +110,15 @@ class CleanedNSFAward:
                 pi["authorId"] = same_author[0]
                 pi["normalizedName"] = same_author[1]
                 pi["displayName"] = same_author[2]
+                pi["paperCount"] = same_author[3]
+                pi["citationCount"] = same_author[4]
             else:
                 same_author = es_author_normalize("{} {}".format(fn, ln))
                 pi["authorId"] = same_author["AuthorId"]
                 pi["normalizedName"] = same_author["NormalizedName"]
                 pi["displayName"] = same_author["DisplayName"]
+                pi["paperCount"] = same_author["PaperCount"]
+                pi["citationCount"] = same_author["CitationCount"]
 
 
     def read_grant_meta_info(self):
@@ -168,6 +174,8 @@ class CleanedNSFAward:
                     "authorId": author["AuthorId"],
                     "normalizedName": author["NormalizedName"],
                     "displayName": author["DisplayName"],
+                    "paperCount": author["PaperCount"],
+                    "citationCount": author["CitationCount"],
                 })
         else:
             publication = {
@@ -215,6 +223,7 @@ class CleanedNSFAward:
                                 print([a["DisplayName"] for a in mag_authors], paper_info["PaperTitle"])
                             self.add_publication(pub_type, pub_str, paper_info, mag_authors)
         self.award["numPublications"] = len(titles)
+        self.save_award_info()
 
     def save_award_info(self):
         outfile = open(os.path.join(cache_path, str(self.award["year"]), "{}.json".format(self.award["id_str"])), 'w')
@@ -232,7 +241,7 @@ class CleanedNSFAward:
         for pub_type in ["publicationResearch", "publicationConference"]:
             for pub in award[pub_type]:
                 for a1 in pub["authors"]:
-                    author_set.add((a1["authorId"], a1["normalizedName"], a1["displayName"]))
+                    author_set.add((a1["authorId"], a1["normalizedName"], a1["displayName"], a1["paperCount"], a1["citationCount"]))
         return author_set
 
     def generate_pi_G(self):
@@ -240,7 +249,8 @@ class CleanedNSFAward:
         award = self.get_award_info()
         for pi in award["investigators"]:
             # if pi["authorId"] in [a[0] for a in self.get_author_set()]:
-            G.add_node(pi["displayName"], norm=pi["normalizedName"], id=pi["authorId"])
+            G.add_node(pi["displayName"], norm=pi["normalizedName"], id=pi["authorId"],
+                            paperCount=pi["paperCount"], citationCount=pi["citationCount"])
         pis = [pi["authorId"] for pi in award["investigators"]]
         # print(pis)
         for pub_type in ["publicationResearch", "publicationConference"]:

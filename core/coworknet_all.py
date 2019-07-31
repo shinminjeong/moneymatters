@@ -10,20 +10,23 @@ import numpy as np
 import xml.etree.ElementTree as ET
 import networkx as nx
 
-def get_grant_coworknet_pis(grant_id):
+def get_grant_coworknet_all(grant_id):
     award = CleanedNSFAward(grant_id)
-    award.generate_award_info(force=True)
+    award.generate_award_info()
     award.normalize_investigator()
     award_info = award.get_award_info()
     time_s = datetime.strptime(award_info["startTime"], "%m/%d/%Y")
     time_e = datetime.strptime(award_info["endTime"], "%m/%d/%Y")
     G = award.generate_pi_G()
     nx.set_edge_attributes(G, grant_id, "grant")
+    # print(G.edges(data=True))
 
     ptable = {}
     papers = {}
     newG = nx.MultiGraph()
     newG.add_nodes_from(G.nodes(data=True))
+    for k, data in newG.nodes.data():
+        data["pi"]=True
     # print(newG.nodes(data=True))
 
     for k, data in G.nodes.data():
@@ -38,37 +41,40 @@ def get_grant_coworknet_pis(grant_id):
         inters_grant = [g["paper"] for g in G[n1][n2].values()]
         for paper in inters:
             pinfo = es_search_paper_from_pid(paper)
+            authors = es_search_authors_from_pid(paper)
+            author_names = []
+            for a in authors:
+                oauthor = es_search_author_name(a["AuthorId"])
+                author_names.append(oauthor["DisplayName"])
+                if oauthor["DisplayName"] not in newG.nodes():
+                    newG.add_node(oauthor["DisplayName"], norm=oauthor["NormalizedName"], id=a["AuthorId"],
+                                paperCount=oauthor["PaperCount"], citationCount=oauthor["CitationCount"], pi=False)
+
             ingrant = False
             if paper in inters_grant:
                 ingrant = True
-            if paper in ptable:
-                ptable[paper]["authors"].add(n1)
-                ptable[paper]["authors"].add(n2)
-            else:
+            if paper not in ptable:
                 ptable[paper] = {
                     "year": pinfo["Year"],
                     "date": datetime.strptime(pinfo["date"], "%Y-%m-%dT%X"),
                     "type": ingrant,
-                    "authors": set([n1, n2])
+                    "authors": author_names
                 }
 
     for k, v in ptable.items():
         for n1, n2 in combinations(v["authors"], 2):
             newG.add_edge(n1, n2, paper=k, grant=grant_id if v["type"] else "other")
             # print(n1, n2, pinfo["Year"], pinfo["date"], paper, ingrant)
+    # print(newG.nodes(data=True))
     return ptable, time_s, time_e, newG
 
 
 if __name__ == '__main__':
     path = os.path.join("../data/NSF/cache", str(2004))
-    # for filename in sorted(os.listdir(path)):
-    #     award_id, file_format = filename.split(".")
-    #     table, ts, te, G = get_grant_coworknet_pis("0403428")
-    #     print("--------------------")
-    #     print(ts, te)
-    #     print(table)
-    #     break
-
-    for g in ['0416128', '0420477', '0420614', '0420703', '0420793', '0420836', '0420933', '0420984', '0421063', '0421099', '0421109', '0421200', '0421282', '0421456', '0421502', '0421554', '0423336', '0423386', '0423431', '0423733', '0423891', '0424546', '0426125', '0426593', '0426683', '0426886', '0426971', '0426972', '0427005', '0427413', '0427794', '0428168', '0428216', '0428241', '0428249', '0428344', '0428404', '0428420', '0428472', '0428738', '0428856', '0428887', '0429086', '0429358', '0430175', '0430274', '0430444', '0430722', '0431070', '0432047', '0433540', '0433702', '0435061', '0435190', '0435297', '0435307', '0435353', '0435370', '0435389', '0435425', '0442156', '0444465', '0451843', '0453809', '0454066', '0454074', '0454114', '0454259', '0454279', '0454298', '0454333', '0454394', '0454404', '0454407']:
-        print(g)
-        table, ts, te, G = get_grant_coworknet_pis(g)
+    for filename in sorted(os.listdir(path)):
+        award_id, file_format = filename.split(".")
+        table, ts, te, G = get_grant_coworknet_all("0403428")
+        print("--------------------")
+        print(ts, te)
+        print(table)
+        break
