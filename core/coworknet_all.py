@@ -29,6 +29,8 @@ def get_grant_coworknet_all(grant_id):
         data["pi"]=True
     # print(newG.nodes(data=True))
 
+    inters_grant = [p["paperId"] for p in award.get_award_publications()]
+
     for k, data in G.nodes.data():
         authorid = data["id"]
         papers[authorid] = set(es_search_papers_from_aid(authorid))
@@ -38,8 +40,7 @@ def get_grant_coworknet_all(grant_id):
         n2_id = G.nodes[n2]["id"]
         # print(n1_id, n2_id, data)
         inters = papers[n1_id].intersection(papers[n2_id])
-        inters_grant = [g["paper"] for g in G[n1][n2].values()]
-        for paper in inters:
+        for paper in list(inters)+inters_grant:
             pinfo = es_search_paper_from_pid(paper)
             authors = es_search_authors_from_pid(paper)
             author_names = []
@@ -63,7 +64,7 @@ def get_grant_coworknet_all(grant_id):
 
     for k, v in ptable.items():
         for n1, n2 in combinations(v["authors"], 2):
-            newG.add_edge(n1, n2, paper=k, grant=grant_id if v["type"] else "other")
+            newG.add_edge(n1, n2, date=v["date"], paper=k, grant=grant_id if v["type"] else "other")
             # print(n1, n2, pinfo["Year"], pinfo["date"], paper, ingrant)
     # print(newG.nodes(data=True))
     return ptable, time_s, time_e, newG

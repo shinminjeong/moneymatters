@@ -244,6 +244,13 @@ class CleanedNSFAward:
                     author_set.add((a1["authorId"], a1["normalizedName"], a1["displayName"], a1["paperCount"], a1["citationCount"]))
         return author_set
 
+    def get_award_publications(self):
+        award = self.get_award_info()
+        pubs = []
+        for pub_type in ["publicationResearch", "publicationConference"]:
+            pubs.extend(award[pub_type])
+        return pubs
+
     def generate_pi_G(self):
         G = nx.MultiGraph()
         award = self.get_award_info()
