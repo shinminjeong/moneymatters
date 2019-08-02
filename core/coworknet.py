@@ -10,9 +10,9 @@ import numpy as np
 import xml.etree.ElementTree as ET
 import networkx as nx
 
-def get_grant_coworknet_pis(grant_id):
+def get_grant_coworknet_pis(grant_id, force=False):
     award = CleanedNSFAward(grant_id)
-    award.generate_award_info()
+    award.generate_award_info(force=force)
     award.normalize_investigator()
     award_info = award.get_award_info()
     time_s = datetime.strptime(award_info["startTime"], "%m/%d/%Y")
@@ -49,12 +49,13 @@ def get_grant_coworknet_pis(grant_id):
                     "year": pinfo["Year"],
                     "date": datetime.strptime(pinfo["date"], "%Y-%m-%dT%X"),
                     "type": ingrant,
+                    "citation": pinfo["CitationCount"],
                     "authors": set([n1, n2])
                 }
 
     for k, v in ptable.items():
         for n1, n2 in combinations(v["authors"], 2):
-            newG.add_edge(n1, n2, date=v["date"], paper=k, grant=grant_id if v["type"] else "other")
+            newG.add_edge(n1, n2, date=v["date"], citation=v["citation"], paper=k, grant=grant_id if v["type"] else "other")
             # print(n1, n2, pinfo["Year"], pinfo["date"], paper, ingrant)
     return ptable, time_s, time_e, newG
 
