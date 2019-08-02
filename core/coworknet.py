@@ -12,7 +12,7 @@ import networkx as nx
 
 def get_grant_coworknet_pis(grant_id):
     award = CleanedNSFAward(grant_id)
-    award.generate_award_info(force=True)
+    award.generate_award_info()
     award.normalize_investigator()
     award_info = award.get_award_info()
     time_s = datetime.strptime(award_info["startTime"], "%m/%d/%Y")
@@ -54,7 +54,7 @@ def get_grant_coworknet_pis(grant_id):
 
     for k, v in ptable.items():
         for n1, n2 in combinations(v["authors"], 2):
-            newG.add_edge(n1, n2, paper=k, grant=grant_id if v["type"] else "other")
+            newG.add_edge(n1, n2, date=v["date"], paper=k, grant=grant_id if v["type"] else "other")
             # print(n1, n2, pinfo["Year"], pinfo["date"], paper, ingrant)
     return ptable, time_s, time_e, newG
 
