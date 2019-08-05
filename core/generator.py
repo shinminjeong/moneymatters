@@ -35,7 +35,7 @@ def get_paper_information(data):
             author = es_search_author_name(au["AuthorId"])
             mag_authors.append(author)
     except Exception as e:
-        print("Error:", title)
+        print("Error:", title, e)
         return rawstr, None, []
     return rawstr, paper_info, mag_authors
 

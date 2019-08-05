@@ -5,7 +5,7 @@ from operator import itemgetter
 ES_SERVER = "130.56.248.215:9200"
 
 def es_search_paper_title(title):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    client = Elasticsearch(ES_SERVER, request_timeout=120)
     s = Search(using=client, index="papers")
     s = s.query("match", PaperTitle=title)
     response = s.execute()
