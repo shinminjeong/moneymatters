@@ -88,38 +88,41 @@ class CleanedNSFAward:
         author_set = self.get_author_set()
         # print(author_set)
         for pi in self.award["investigators"]:
-            count = 0
             fn = pi["firstName"].lower()
             ln = pi["lastName"].lower()
-            same_author = None
+            candidates = []
             for author in author_set:
                 # print("normalize_investigator", author)
                 author_lower = author[2].lower()
                 if fn in author_lower and ln in author_lower:
                     # both first and last name in the author list
-                    count += 1
-                    same_author = author
-                    # print(pi["firstName"], pi["lastName"], author)
+                    candidates.append(author)
                 elif fn[0] in [a[0] for a in author_lower.split(" ")] and ln in author_lower:
                     # first initial and last name in the author list
-                    count += 1
-                    same_author = author
-                    # print(pi["firstName"], pi["lastName"], author)
+                    candidates.append(author)
             # print(count, same_author)
-            if count == 1:
-                pi["authorId"] = same_author[0]
-                pi["normalizedName"] = same_author[1]
-                pi["displayName"] = same_author[2]
-                pi["paperCount"] = same_author[3]
-                pi["citationCount"] = same_author[4]
-            else:
+            if len(candidates) == 0:
                 same_author = es_author_normalize("{} {}".format(fn, ln))
                 pi["authorId"] = same_author["AuthorId"]
                 pi["normalizedName"] = same_author["NormalizedName"]
                 pi["displayName"] = same_author["DisplayName"]
                 pi["paperCount"] = same_author["PaperCount"]
                 pi["citationCount"] = same_author["CitationCount"]
-
+            elif len(candidates) == 1:
+                pi["authorId"] = candidates[0][0]
+                pi["normalizedName"] = candidates[0][1]
+                pi["displayName"] = candidates[0][2]
+                pi["paperCount"] = candidates[0][3]
+                pi["citationCount"] = candidates[0][4]
+            else:
+                same_author = sorted(candidates, key=lambda x: x[3], reverse=True)[0]
+                pi["authorId"] = same_author[0]
+                pi["normalizedName"] = same_author[1]
+                pi["displayName"] = same_author[2]
+                pi["paperCount"] = same_author[3]
+                pi["citationCount"] = same_author[4]
+            pi["candidates"] = candidates
+            # print(pi)
 
     def read_grant_meta_info(self):
         path = os.path.join(data_path, str(self.award["year"]), "{}.xml".format(self.award["id_str"]))
@@ -254,11 +257,15 @@ class CleanedNSFAward:
     def generate_pi_G(self):
         G = nx.MultiGraph()
         award = self.get_award_info()
+        pis = []
         for pi in award["investigators"]:
             # if pi["authorId"] in [a[0] for a in self.get_author_set()]:
             G.add_node(pi["displayName"], norm=pi["normalizedName"], id=pi["authorId"],
                             paperCount=pi["paperCount"], citationCount=pi["citationCount"])
-        pis = [pi["authorId"] for pi in award["investigators"]]
+            for c in pi["candidates"]:
+                G.add_node(c[2], norm=c[1], id=c[0], paperCount=c[3], citationCount=c[4])
+            pis.append(pi["authorId"])
+            pis.extend([c[0] for c in pi["candidates"]])
         # print(pis)
         for pub_type in ["publicationResearch", "publicationConference"]:
             for pub in award[pub_type]:

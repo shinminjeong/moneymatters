@@ -24,10 +24,10 @@ def es_search_authors_from_pid(paperid):
     s = s.params(size=1000)
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
-    cols = ["AuthorId"]
-    data = []
+    cols = ["AuthorId", "AffiliationId"]
+    data = None
     if result:
-        data = [{c:res["_source"][c] for c in cols} for res in result]
+        data = [{c:res["_source"][c] if c in res["_source"] else None for c in cols} for res in result]
     else:
         print("[es_search_authors_from_pid] no result", paperid)
     return data
@@ -120,7 +120,9 @@ def es_author_normalize(name):
     s = s.params(size=500)
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
-    sorted_list = sorted([s["_source"] for s in result if s["_score"] > 13], key=itemgetter("Rank"))
+    sorted_list = sorted([s["_source"] for s in result if s["_score"] > 16], key=itemgetter("Rank"))
+    if len(sorted_list) == 0:
+        sorted_list = sorted([s["_source"] for s in result if s["_score"] > 13], key=itemgetter("Rank"))
     if len(sorted_list) == 0:
         sorted_list = sorted([s["_source"] for s in result], key=itemgetter("Rank"))
     sorted_list = sorted(sorted_list, key=itemgetter("PaperCount"), reverse=True)
