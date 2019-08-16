@@ -12,10 +12,12 @@ import networkx as nx
 
 cache_path = "../data/NSF/cache"
 
+
 def get_grant_coworknet_pis(grant_id, force=False):
     award = CleanedNSFAward(grant_id)
     award.generate_award_info(force=force)
-    award.normalize_investigator()
+    if force:
+        award.normalize_investigator()
     award_info = award.get_award_info()
     time_s = datetime.strptime(award_info["startTime"], "%m/%d/%Y")
     time_e = datetime.strptime(award_info["endTime"], "%m/%d/%Y")
@@ -36,6 +38,7 @@ def get_grant_coworknet_pis(grant_id, force=False):
     else:
         inters_grant = [p["paperId"] for p in award.get_award_publications() if "paperId" in p]
         for k, data in G.nodes.data():
+            # print(k, data)
             authorid = data["id"]
             papers[authorid] = set(es_search_papers_from_aid(authorid))
         # print(papers)
@@ -53,6 +56,7 @@ def get_grant_coworknet_pis(grant_id, force=False):
             author_names = []
             author_list = {}
             for a in authors:
+                # print(a)
                 oauthor = es_search_author_name(a["AuthorId"])
                 author_names.append(oauthor["DisplayName"])
                 if oauthor["DisplayName"] not in newG.nodes():
@@ -94,17 +98,18 @@ def get_grant_coworknet_pis(grant_id, force=False):
 
 
 if __name__ == '__main__':
-    path = os.path.join("../data/NSF/cache", str(2004))
+    path = os.path.join("../data/NSF/cache", str(2009))
     for filename in sorted(os.listdir(path)):
         award_id, file_format = filename.split(".")
         print(award_id)
-        table, ts, te, G = get_grant_coworknet_pis(award_id)
-
-    # l = []
+        table, ts, te, G = get_grant_coworknet_pis(award_id, force=True)
+        # break
+    #
+    # l =  []
     # for award_id in l:
     #     print(award_id)
-    #     table, ts, te, G = get_grant_coworknet_pis(award_id)
-    #     print("--------------------")
-    #     print(ts, te)
-    #     print(table)
-    #     break
+        # table, ts, te, G = get_grant_coworknet_pis(award_id, force=True)
+        # print("--------------------")
+        # print(ts, te)
+        # print(table)
+        # break

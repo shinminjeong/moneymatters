@@ -114,7 +114,7 @@ def es_get_fos_level(fosids):
 def es_author_normalize(name):
     name = name.replace("-", "")
     name = name.replace("'", "")
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    client = Elasticsearch(ES_SERVER, request_timeout=300)
     s = Search(using=client, index="authors")
     s = s.query("match", NormalizedName=name)
     s = s.params(size=500)
