@@ -56,7 +56,6 @@ def get_grant_coworknet_pis(grant_id, force=False):
             author_names = []
             author_list = {}
             for a in authors:
-                # print(a)
                 oauthor = es_search_author_name(a["AuthorId"])
                 author_names.append(oauthor["DisplayName"])
                 if oauthor["DisplayName"] not in newG.nodes():
@@ -66,6 +65,7 @@ def get_grant_coworknet_pis(grant_id, force=False):
                 author_list[oauthor["DisplayName"]] = {
                     "norm":oauthor["NormalizedName"], "id":a["AuthorId"],
                     "paperCount":oauthor["PaperCount"], "citationCount":oauthor["CitationCount"],
+                    "affiliation":a["AffiliationId"],
                     "pi":True if oauthor["DisplayName"] in pis else False
                 }
 
@@ -94,22 +94,25 @@ def get_grant_coworknet_pis(grant_id, force=False):
                         pi=v["authors"][n]["pi"])
             newG.add_edge(n1, n2, date=v["date"], citation=v["citation"], paper=k, grant=grant_id if v["type"] else "other")
             # print(n1, n2, pinfo["Year"], pinfo["date"], paper, ingrant)
-    return ptable, time_s, time_e, newG
+    return award_info, ptable, time_s, time_e, newG
 
 
 if __name__ == '__main__':
-    path = os.path.join("../data/NSF/cache", str(2009))
-    for filename in sorted(os.listdir(path)):
-        award_id, file_format = filename.split(".")
-        print(award_id)
-        table, ts, te, G = get_grant_coworknet_pis(award_id, force=True)
-        # break
-    #
-    # l =  []
-    # for award_id in l:
+    # path = os.path.join("../data/NSF/cache", str(2009))
+    # for filename in sorted(os.listdir(path)):
+    #     award_id, file_format = filename.split(".")
     #     print(award_id)
-        # table, ts, te, G = get_grant_coworknet_pis(award_id, force=True)
-        # print("--------------------")
-        # print(ts, te)
-        # print(table)
+    #     table, ts, te, G = get_grant_coworknet_pis(award_id, force=True)
         # break
+
+    list_error = []
+    l = []
+    for award_id in l:
+        try:
+            print(award_id)
+            _, table, ts, te, G = get_grant_coworknet_pis(award_id, force=True)
+        except Exception as e:
+            print("Exception: ", e, award_id)
+            list_error.append(award_id)
+
+    print(list_error)
