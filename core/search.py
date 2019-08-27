@@ -59,6 +59,43 @@ def es_search_papers_from_aid(authorid):
         print("[es_search_papers_from_authorid] no result", authorid)
     return data
 
+def es_search_paper_info_from_aid(authorid):
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="paperauthoraffiliations")
+    s = s.query("match", AuthorId=authorid)
+    s = s.params(size=1000)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    data = []
+    if result:
+        data = [res["_source"] for res in result]
+    else:
+        print("[es_search_papers_from_authorid] no result", authorid)
+    return data
+
+
+def es_filter_papers_grant_range(paperids, ts, te):
+    Q = { "bool": { "must": [
+            { "terms": { "PaperId": paperids}},
+            { "range" : { "date" : {
+                "gte" : ts,
+                "lte" : te
+              }}
+            }
+        ]}}
+    client = Elasticsearch(ES_SERVER, request_timeout=60)
+    s = Search(using=client, index="papers")
+    s = s.params(size=1000)
+    s = s.query(Q)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    data = []
+    if result:
+        data = [r["_source"]["PaperId"] for r in result]
+    else:
+        print("[es_filter_papers_grant_range] no result")
+    return data
+
 def es_search_author_name(authorid):
     client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="authors")
