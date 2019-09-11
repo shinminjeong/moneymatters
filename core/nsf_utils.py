@@ -466,7 +466,7 @@ def download_pub_grant(grant_ids):
 
 
 # download all publications of year
-def download_pub(years, after):
+def download_pub(years, after="0000000"):
     for year in years:
         path = os.path.join(data_path, str(year))
         for filename in sorted(os.listdir(path)):
@@ -527,100 +527,28 @@ def load_numpub_data(year):
     return data
 
 
-def grant_analysis(grant_id):
-    year, award_id = get_grant_year_id(grant_id)
-    path = os.path.join(data_path, str(year), award_id)
-    # print(path)
-    try:
-        # read grant data
-        root = ET.parse("{}.xml".format(path)).getroot()
-        award = grant_type = root.find("Award")
-        title = award.find("AwardTitle").text
-        grant_type = award.find("AwardInstrument").find("Value").text
-        grant_amount = int(award.find("AwardAmount").text)
-        code = award.find("Organization").find("Code").text
-        grant_start = award.find("AwardEffectiveDate").text
-        grant_end = award.find("AwardExpirationDate").text
+def grant_analysis(grant_id, force=False):
+    award = CleanedNSFAward(grant_id)
+    award.generate_award_info(mag_search=force, force=force)
+    if force:
+        award.normalize_investigator()
+    award_info = award.get_award_info()
 
-        inst = award.find("Institution")
-        if inst:
-            inst_name = inst.find("Name").text
-        else:
-            inst_name = ""
-            print("No institution name", award_id)
-
-        # print([award_id, title, grant_type, grant_amount, code, grant_start, grant_end, inst_name])
-
-        num_pi = 0
-        investigators = award.findall("Investigator")
-        if not investigators:
-            print("No investigator", award_id)
-        else:
-            for investigator in investigators:
-                inv_fname = inv_lname = inv_eaddr = inv_role = ""
-                inv_fname = investigator.find("FirstName").text
-                inv_lname = investigator.find("LastName").text
-                inv_eaddr = investigator.find("EmailAddress").text
-                inv_role = investigator.find("RoleCode").text
-                num_pi += 1
-                # print([inv_fname, inv_lname, inv_role])
-
-        # get publication data
-        num_authors = []
-        num_citations = []
-        nun_pubs = 0
-        titles = []
-        publications = json.load(open("{}.json".format(path), "r"))
-        if publications["response"]["award"]:
-            pubs = publications["response"]["award"][0]["publicationResearch"]
-            for p in pubs:
-                pinfo = p.split("~")
-                authors = pinfo[0]
-                title = pinfo[1]
-                venue = pinfo[2]
-                version = pinfo[3]
-                pyear = pinfo[4]
-                if title.lower() in titles:
-                    continue
-                titles.append(title.lower())
-                nun_pubs += 1
-                # print(authors, title, venue, pyear)
-                num_authors.append(len(authors.split(",")))
-                # print(year, title, "number of authors =", len(authors.split(",")))
-                paper_info = es_search_paper_title(title)
-                num_citations.append(paper_info["CitationCount"])
-
-            if "publicationConference" in publications["response"]["award"][0]:
-                pubs = publications["response"]["award"][0]["publicationConference"]
-                for p in pubs:
-                    pinfo = p.split("~")
-                    authors = pinfo[0]
-                    title = pinfo[1]
-                    venue = pinfo[2]
-                    version = pinfo[3]
-                    pyear = pinfo[4]
-                    if title.lower() in titles:
-                        continue
-                    nun_pubs += 1
-                    titles.append(title.lower())
-                    # print(authors, title, venue, pyear)
-                    num_authors.append(len(parse_authors(authors)))
-                    # print(year, title, "number of authors =", len(authors.split(",")))
-                    paper_info = es_search_paper_title(title)
-                    num_citations.append(paper_info["CitationCount"])
-            if not num_authors:
-                num_authors = [0]
-            if not num_citations:
-                num_citations = [0]
-        else:
-            num_authors = num_citations = [0]
-
-        # print('{},{},"{}",{},{},{},{},{},{},{},{}'.format(year, award_id, title, num_pi, grant_type, grant_amount,
-        #     nun_pubs, np.mean(num_authors), np.median(num_authors), np.mean(num_citations), np.median(num_citations)))
-        return year, award_id, title, num_pi, grant_type, grant_amount, nun_pubs, np.mean(num_authors), np.mean(num_citations)
-    except Exception as e:
-        print("[Error]", e)
-        return None
+    # print('{},{},"{}",{},{},{},{},{},{},{},{}'.format(year, award_id, title, num_pi, grant_type, grant_amount,
+    #     nun_pubs, np.mean(num_authors), np.median(num_authors), np.mean(num_citations), np.median(num_citations)))
+    year = award_info["year"]
+    title = award_info["awardTitle"]
+    num_pi = len(award_info["investigators"])
+    grant_type = award_info["awardInstrument"]
+    grant_amount = award_info["awardAmount"]
+    num_pubs = award_info["numPublications"]
+    num_authors = []
+    num_citations = []
+    for pub_type in ["publicationResearch", "publicationConference"]:
+        for pub in award_info[pub_type]:
+            num_authors.append(len(pub["authors"]))
+            num_citations.append(pub["citationCount"])
+    return year, grant_id, title, num_pi, grant_type, grant_amount, num_pubs, np.mean(num_authors), np.mean(num_citations)
 
 
 def publication_analysis(grant_id, title_printout=False):
@@ -638,19 +566,27 @@ def get_grant_publications(grant_id):
     award.generate_award_info()
     return award.get_award_info()
 
+def search_grant_by_email(years, emailaddr):
+    for year in years:
+        sum_data = pd.read_csv(os.path.join(outf_path, "summary_{}.csv".format(year)))
+        filtered = sum_data[sum_data["email"] == emailaddr]
+        print(filtered)
+    pass
+
 
 if __name__ == '__main__':
-    years = range(2010, 2012, 1)
-    # download_pub(years, "1005493")
+    years = range(1995, 2000, 1)
+    # read_xml_files(years)
+    # download_pub(years, "9619371")
     # parse_publication([2013])
-    count_pub_amount(2004)
+    # count_pub_amount(2004)
     # count_numgrant_division_year(years)
     # count_numgrant_year(years)
-    # t_hosking = [509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1832624, 1833291]
-    # h_jagadish = [2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
-    # download_pub_grant(h_jagadish)
-    # for g in t_hosking:
-    #     grant_analysis(g)
+    t_hosking = [9711673, 9988637, 509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1833291]
+    # h_jagadish = [9986030, 2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
+    # download_pub_grant(t_hosking)
+    for g in t_hosking:
+        grant_analysis(g, force=True)
     # team_analysis(2000)
     # publication_analysis(1157698) # 954 publications
     # publication_analysis(719966) # 107 publications (Books and one time proceeding)

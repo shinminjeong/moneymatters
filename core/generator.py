@@ -1,6 +1,7 @@
 import os,sys,json
 import requests
 from core.search import *
+from core.web_scraper import get_paper_list
 from collections import Counter
 from datetime import datetime
 from itertools import combinations
@@ -8,6 +9,7 @@ from multiprocessing import Pool
 import numpy as np
 import xml.etree.ElementTree as ET
 import networkx as nx
+
 
 data_path = "../data/NSF/raw"
 cache_path = "../data/NSF/cache"
@@ -75,6 +77,7 @@ class CleanedNSFAward:
             }
             self.read_grant_meta_info()
             self.read_grant_publications(mag_search=mag_search)
+            self.scrape_books_one_time_proceeding(mag_search=mag_search)
 
     def add_investigator(self, fname, lname, eaddr, role):
         self.award["investigators"].append({
@@ -186,6 +189,34 @@ class CleanedNSFAward:
                 "authors": [],
             }
         self.award[pub_type].append(publication)
+
+    def scrape_books_one_time_proceeding(self, mag_search=True, title_printout=False):
+        publications = get_paper_list(self.award["id_str"])
+        titles = []
+        original_titles = []
+        for ori_title, title in publications:
+            norm_title = title.lower().replace(".", "").replace(" ", "")
+            if norm_title in titles:
+                self.dup_title += 1
+                continue
+            titles.append(norm_title)
+            original_titles.append((ori_title, title))
+
+        if self.thread_pool != None:
+            searched_papers = self.thread_pool.map(get_paper_information, original_titles)
+            for pub_str, paper_info, mag_authors in searched_papers:
+                if title_printout:
+                    print([a["DisplayName"] for a in mag_authors], paper_info["PaperTitle"])
+                self.add_publication(pub_type, pub_str, paper_info, mag_authors)
+        else:
+            for ori_title in original_titles:
+                pub_str, paper_info, mag_authors = get_paper_information(ori_title)
+                if title_printout:
+                    print([a["DisplayName"] for a in mag_authors], paper_info["PaperTitle"])
+                self.add_publication(pub_type, pub_str, paper_info, mag_authors)
+        self.award["numPublications"] += len(titles)
+        self.save_award_info()
+
 
     def read_grant_publications(self, mag_search=True, title_printout=False):
         path = os.path.join(data_path, str(self.award["year"]), "{}.json".format(self.award["id_str"]))
