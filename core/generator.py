@@ -74,6 +74,7 @@ class CleanedNSFAward:
                 "numPublications": 0,
                 "publicationResearch": [],
                 "publicationConference": [],
+                "publicationBook": [],
             }
             self.read_grant_meta_info()
             self.read_grant_publications(mag_search=mag_search)
@@ -202,6 +203,7 @@ class CleanedNSFAward:
             titles.append(norm_title)
             original_titles.append((ori_title, title))
 
+        pub_type = "publicationBook"
         if self.thread_pool != None:
             searched_papers = self.thread_pool.map(get_paper_information, original_titles)
             for pub_str, paper_info, mag_authors in searched_papers:
@@ -272,7 +274,7 @@ class CleanedNSFAward:
     def get_author_set(self):
         author_set = set()
         award = self.get_award_info()
-        for pub_type in ["publicationResearch", "publicationConference"]:
+        for pub_type in ["publicationResearch", "publicationConference", "publicationBook"]:
             for pub in award[pub_type]:
                 for a1 in pub["authors"]:
                     author_set.add((a1["authorId"], a1["normalizedName"], a1["displayName"], a1["paperCount"], a1["citationCount"]))
@@ -281,7 +283,7 @@ class CleanedNSFAward:
     def get_award_publications(self):
         award = self.get_award_info()
         pubs = []
-        for pub_type in ["publicationResearch", "publicationConference"]:
+        for pub_type in ["publicationResearch", "publicationConference", "publicationBook"]:
             pubs.extend(award[pub_type])
         return pubs
 
@@ -298,7 +300,7 @@ class CleanedNSFAward:
             pis.append(pi["authorId"])
             pis.extend([c[0] for c in pi["candidates"]])
         # print(pis)
-        for pub_type in ["publicationResearch", "publicationConference"]:
+        for pub_type in ["publicationResearch", "publicationConference", "publicationBook"]:
             for pub in award[pub_type]:
                 # print(pub["paperId"], pub["paperTitle"], pub["authors"])
                 for a1, a2 in combinations(pub["authors"], 2):
@@ -309,7 +311,7 @@ class CleanedNSFAward:
     def generate_author_G(self):
         G = nx.Graph()
         award = self.get_award_info()
-        for pub_type in ["publicationResearch", "publicationConference"]:
+        for pub_type in ["publicationResearch", "publicationConference", "publicationBook"]:
             for pub in award[pub_type]:
                 for a1, a2 in combinations(pub["authors"], 2):
                     G.add_edge(a1["displayName"], a2["displayName"]),
@@ -321,7 +323,8 @@ class CleanedNSFAward:
     def get_num_titles(self):
         num_pub_research = len(self.award["publicationResearch"])
         num_pub_conference = len(self.award["publicationConference"])
-        return num_pub_research+num_pub_conference
+        num_pub_book = len(self.award["publicationBook"])
+        return num_pub_research+num_pub_conference+num_pub_book
 
     def print_award(self):
         print(json.dumps(self.award))

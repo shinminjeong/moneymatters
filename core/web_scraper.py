@@ -10,22 +10,27 @@ def scrape_award_page(award_id):
 
 def get_paper_list(award_id):
     soup = BeautifulSoup(scrape_award_page(award_id), 'html.parser')
-    p = soup.find('strong', string="BOOKS/ONE TIME PROCEEDING").parent
+    try:
+        p = soup.find('strong', string="BOOKS/ONE TIME PROCEEDING").parent
+    except Exception as e:
+        print(award_id, "books and one time proceeding = 0")
+        return []
+
     for table in p('table'):
         table.extract()
-    print(p.get_text())
+    # print(p.get_text())
 
     papers = []
     for p in p.get_text().split("\n"):
         p_strip = p.strip()
         if p_strip != "" and len(p_strip.split('"')) > 2 and ",&nbsp" != p_strip[:6]:
-            print("[{}]".format(p_strip))
+            # print("[{}]".format(p_strip))
             paper_title = p_strip.split('"')[1]
-            print("*", paper_title)
+            # print("*", paper_title)
             papers.append((p_strip, paper_title))
     print(award_id, "books and one time proceeding =", len(papers))
     return papers
 
 # get_paper_list("9711673")
 # get_paper_list("9988637")
-get_paper_list("0702240")
+# get_paper_list("0702240")
