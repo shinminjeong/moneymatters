@@ -548,7 +548,12 @@ def grant_analysis(grant_id, force=False):
         for pub in award_info[pub_type]:
             num_authors.append(len(pub["authors"]))
             num_citations.append(pub["citationCount"])
-    return year, grant_id, title, num_pi, grant_type, grant_amount, num_pubs, np.mean(num_authors), np.mean(num_citations)
+    return award_info, np.mean(num_authors), np.mean(num_citations)
+
+def get_author_G(grant_id):
+    award = CleanedNSFAward(grant_id)
+    award.generate_award_info()
+    return award.generate_author_G()
 
 
 def publication_analysis(grant_id, title_printout=False):
@@ -582,10 +587,10 @@ if __name__ == '__main__':
     # count_pub_amount(2004)
     # count_numgrant_division_year(years)
     # count_numgrant_year(years)
-    t_hosking = [9711673, 9988637, 509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1833291]
-    # h_jagadish = [9986030, 2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
+    # t_hosking = [9711673, 9988637, 509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1833291]
+    h_jagadish = [9986030, 2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
     # download_pub_grant(t_hosking)
-    for g in t_hosking:
+    for g in h_jagadish:
         grant_analysis(g, force=True)
     # team_analysis(2000)
     # publication_analysis(1157698) # 954 publications

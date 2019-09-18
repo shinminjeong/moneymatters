@@ -311,10 +311,16 @@ class CleanedNSFAward:
     def generate_author_G(self):
         G = nx.Graph()
         award = self.get_award_info()
+        pi_set = self.generate_pi_G().nodes
         for pub_type in ["publicationResearch", "publicationConference", "publicationBook"]:
             for pub in award[pub_type]:
                 for a1, a2 in combinations(pub["authors"], 2):
                     G.add_edge(a1["displayName"], a2["displayName"]),
+        for n in G.nodes:
+            if n in pi_set:
+                G.nodes[n]["pi"] = True
+            else:
+                G.nodes[n]["pi"] = False
         return G
 
     def get_investigator_names(self):
