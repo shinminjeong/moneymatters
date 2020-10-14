@@ -11,7 +11,7 @@ def es_search_paper_title(title):
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
     data = {}
-    if result:
+    if result and result[0]["_score"] > 35:
         data = result[0]["_source"]
     else:
         print("[es_search_paper_title] no result", title)

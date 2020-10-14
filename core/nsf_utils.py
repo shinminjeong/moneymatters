@@ -527,7 +527,10 @@ def load_numpub_data(year):
     return data
 
 
+author_set = list()
 def grant_analysis(grant_id, force=False):
+    global author_set
+
     award = CleanedNSFAward(grant_id)
     award.generate_award_info(mag_search=force, force=force)
     if force:
@@ -544,10 +547,27 @@ def grant_analysis(grant_id, force=False):
     num_pubs = award_info["numPublications"]
     num_authors = []
     num_citations = []
-    for pub_type in ["publicationResearch", "publicationConference"]:
+
+    # print('{{id:{}, title:"{}", start_date:"{}", end_date:"{}", type:"{}"}},'.format(
+    #     grant_id, grant_id, award_info["startTime"], award_info["endTime"], award_info["awardInstrument"].split()[0]
+    # ))
+
+    for pub_type in ["publicationResearch", "publicationConference", "publicationBook"]:
         for pub in award_info[pub_type]:
+            # print(pub["raw_string"])
+            # print(pub["paperTitle"] if "paperTitle" in pub else "no paper")
+            # print()
             num_authors.append(len(pub["authors"]))
-            num_citations.append(pub["citationCount"])
+            num_citations.append(pub["citationCount"] if "citationCount" in pub else 0)
+            # print('{{id:{}, paper_title:"{}", year:"{}", citation:"{}", authors:{}}},'.format(
+            #     grant_id, pub["paperTitle"], pub["year"], pub["citationCount"], pub["authors"]
+            # ))
+
+            for aut in pub["authors"]:
+                author_set.append(aut["displayName"])
+                print('{{id:{}, paper_id:"{}", paper_title:"{}", start_date:"{}", end_date:"{}", year:"{}", citation:"{}", author_name:"{}"}},'.format(
+                    grant_id, pub["paperId"], pub["paperTitle"], award_info["startTime"], award_info["endTime"], pub["year"], pub["citationCount"], aut["displayName"]
+                ))
     return award_info, np.mean(num_authors), np.mean(num_citations)
 
 def get_author_G(grant_id):
@@ -587,11 +607,14 @@ if __name__ == '__main__':
     # count_pub_amount(2004)
     # count_numgrant_division_year(years)
     # count_numgrant_year(years)
-    # t_hosking = [9711673, 9988637, 509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1833291]
-    h_jagadish = [9986030, 2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
+    t_hosking = [9711673, 9988637, 509377, 540866, 551658, 702240, 720505, 722210, 811691, 1042905, 1347630, 1405939, 1408896, 1549774, 1832624, 1833291]
+    # h_jagadish = [9986030, 2356, 75447, 85945, 208852, 219513, 239993, 303587, 438909, 741620, 808824, 903629, 915782, 1017149, 1017296, 1250880, 1741022]
     # download_pub_grant(t_hosking)
-    for g in h_jagadish:
-        grant_analysis(g, force=True)
+    for g in t_hosking:
+        grant_analysis(g)
+    author_list = sorted(Counter(author_set).items(), key = lambda x: x[1], reverse=True)
+    # print(author_list)
+    # print([v[0] for v in author_list])
     # team_analysis(2000)
     # publication_analysis(1157698) # 954 publications
     # publication_analysis(719966) # 107 publications (Books and one time proceeding)
