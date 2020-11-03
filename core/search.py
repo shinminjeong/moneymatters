@@ -2,10 +2,45 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, Q
 from operator import itemgetter
 
-ES_SERVER = "130.56.248.215:9200"
+ES_SERVER = "130.56.248.78:9200"
+client = Elasticsearch(ES_SERVER, timeout=600)
+
+def es_search_conference_name(name, title):
+    s = Search(using=client, index="conferenceseries")
+    s = s.query(Q('bool', must=[Q('match', NormalizedName=name), Q('match', DisplayName=title)]))
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    data = {}
+    if result:
+        data = result[0]["_source"]
+    else:
+        print("[es_search_conference] no result", name)
+    return data
+
+def es_search_affiliation_id(affid):
+    s = Search(using=client, index="affiliations")
+    s = s.query("match", AffiliationId=affid)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    data = {}
+    if result:
+        data = result[0]["_source"]
+    else:
+        print("[es_search_affiliation_id] no result", name)
+    return data
+
+def es_search_papers_from_confid(confid, papercnt):
+    s = Search(using=client, index="papers") \
+        .query("match", ConferenceSeriesId=confid)
+    s = s.params(preserve_order=True)
+    data = []
+    for position, hit in enumerate(s.scan()):
+        if position == papercnt:
+            break
+        data.append(hit.to_dict())
+    return data
 
 def es_search_paper_title(title):
-    client = Elasticsearch(ES_SERVER, request_timeout=120)
     s = Search(using=client, index="papers")
     s = s.query("match", PaperTitle=title)
     response = s.execute()
@@ -18,7 +53,6 @@ def es_search_paper_title(title):
     return data
 
 def es_search_authors_from_pid(paperid):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="paperauthoraffiliations")
     s = s.query("match", PaperId=paperid)
     s = s.params(size=1000)
@@ -46,7 +80,6 @@ def es_search_paper_from_pid(paperid):
     return data
 
 def es_search_papers_from_aid(authorid):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="paperauthoraffiliations")
     s = s.query("match", AuthorId=authorid)
     s = s.params(size=1000)
@@ -60,7 +93,6 @@ def es_search_papers_from_aid(authorid):
     return data
 
 def es_search_paper_info_from_aid(authorid):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="paperauthoraffiliations")
     s = s.query("match", AuthorId=authorid)
     s = s.params(size=1000)
@@ -73,6 +105,19 @@ def es_search_paper_info_from_aid(authorid):
         print("[es_search_papers_from_authorid] no result", authorid)
     return data
 
+def es_search_aff_info_from_pid(paperid):
+    s = Search(using=client, index="paperauthoraffiliations")
+    s = s.query("match", PaperId=paperid)
+    s = s.params(size=1000)
+    response = s.execute()
+    result = response.to_dict()["hits"]["hits"]
+    data = []
+    if result:
+        data = [res["_source"] for res in result]
+    else:
+        print("[es_search_aff_info_from_pid] no result", authorid)
+    return data
+
 
 def es_filter_papers_grant_range(paperids, ts, te):
     Q = { "bool": { "must": [
@@ -83,7 +128,6 @@ def es_filter_papers_grant_range(paperids, ts, te):
               }}
             }
         ]}}
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="papers")
     s = s.params(size=1000)
     s = s.query(Q)
@@ -97,7 +141,6 @@ def es_filter_papers_grant_range(paperids, ts, te):
     return data
 
 def es_search_author_name(authorid):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="authors")
     s = s.query("match", AuthorId=authorid)
     response = s.execute()
@@ -112,7 +155,6 @@ def es_search_author_name(authorid):
 
 
 def es_get_paper_conf_year(confid, year):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="papers")
     s = s.query(Q('bool', must=[Q('match', ConferenceSeriesId=confid), Q('match', Year=year)]))
     s = s.params(size=500)
@@ -121,8 +163,7 @@ def es_get_paper_conf_year(confid, year):
     return result
 
 
-def es_get_paper_fos(paperids):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
+def es_get_papers_fos(paperids):
     s = Search(using=client, index="paperfieldsofstudy")
     s = s.query("terms", PaperId=paperids)
     s = s.params(size=500)
@@ -130,17 +171,20 @@ def es_get_paper_fos(paperids):
     result = response.to_dict()["hits"]["hits"]
     return result
 
-def es_get_paper_fos(paperids):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
+def es_get_paper_fos(paperid):
     s = Search(using=client, index="paperfieldsofstudy")
-    s = s.query("terms", PaperId=paperids)
+    s = s.query("match", PaperId=paperid)
     s = s.params(size=500)
     response = s.execute()
     result = response.to_dict()["hits"]["hits"]
-    return result
+    data = []
+    if result:
+        data = [res["_source"] for res in result]
+    else:
+        print("[es_get_paper_fos] no result", authorid)
+    return data
 
 def es_get_fos_level(fosids):
-    client = Elasticsearch(ES_SERVER, request_timeout=60)
     s = Search(using=client, index="fieldsofstudy")
     s = s.query("terms", FieldOfStudyId=fosids)
     s = s.params(size=500)
@@ -151,7 +195,6 @@ def es_get_fos_level(fosids):
 def es_author_normalize(name):
     name = name.replace("-", "")
     name = name.replace("'", "")
-    client = Elasticsearch(ES_SERVER, request_timeout=300)
     s = Search(using=client, index="authors")
     s = s.query("match", NormalizedName=name)
     s = s.params(size=500)

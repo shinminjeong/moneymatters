@@ -20,6 +20,11 @@ kiise_fos_filenames = [
     "../data/KIISE/conf2016_fos.csv",
     "../data/KIISE/conf2014_fos.csv",
 ]
+ccf_filenames = [
+    "../data/CCF/ccf-2019.csv",
+    "../data/CCF/ccf-2015.csv",
+    "../data/CCF/ccf-2012.csv",
+]
 
 def read_core_data():
     colnames = ["ID", "Title", "Acronym", "Year", "Rank", "Data", "FoR1", "FoR2", "FoR3"]
@@ -30,6 +35,21 @@ def read_core_data():
 
     df = pd.concat(data, ignore_index = True)
     return df
+
+def get_core_conflist(filename, category, rankabove):
+    print("get_core_conflist", filename, category, rankabove)
+    colnames = ["ID", "Title", "Acronym", "Year", "Rank", "Data", "FoR1", "FoR2", "FoR3"]
+    df = pd.read_csv(filename, names=colnames)
+    if rankabove == "A*":
+        df = df[(df["FoR1"] == category) & (df["Rank"] == "A*")]
+    elif rankabove == "A":
+        df = df[(df["FoR1"] == category) & ((df["Rank"] == "A*") | (df["Rank"] == "A"))]
+    elif rankabove == "B":
+        df = df[(df["FoR1"] == category) & ((df["Rank"] == "A*") | (df["Rank"] == "A") | (df["Rank"] == "B"))]
+    elif rankabove == "C":
+        df = df[(df["FoR1"] == category) & ((df["Rank"] == "A*") | (df["Rank"] == "A") | (df["Rank"] == "B") | (df["Rank"] == "C"))]
+    data = df[["Acronym"]].values.tolist();
+    return [c[0] for c in data]
 
 def read_kiise_data():
     colnames = ["ID", "Acronym", "Year", "Rank", "Note", "Title", "-"]
@@ -51,6 +71,39 @@ def read_kiise_fos_data():
     df = pd.concat(data, ignore_index = True)
     return df
 
+def get_kiise_conflist(filename, category, rankabove):
+    print("get_kiise_conflist", filename, category, rankabove)
+    colnames = ["ID", "Acronym", "Year", "Rank", "Note", "Title", "FoR1"]
+    df = pd.read_csv(filename, names=colnames)
+    if rankabove == "S":
+        df = df[(df["FoR1"] == category) & (df["Rank"] == "S")]
+    elif rankabove == "A":
+        df = df[(df["FoR1"] == category) & ((df["Rank"] == "S") | (df["Rank"] == "A"))]
+    data = df[["Acronym"]].values.tolist();
+    return [c[0] for c in data]
+
+def read_ccf_fos_data():
+    colnames = ["Year", "Acronym", "Title", "Rank", "FoR1", "-", "-", "-"]
+    data = []
+    for filename in ccf_filenames:
+        newf = pd.read_csv(filename, names=colnames)
+        data.append(newf)
+
+    df = pd.concat(data, ignore_index = True)
+    return df
+
+def get_ccf_conflist(filename, category, rankabove):
+    print("get_ccf_conflist", filename, category, rankabove)
+    colnames = ["Year", "Acronym", "Title", "Rank", "FoR1", "-", "-", "-"]
+    df = pd.read_csv(filename, names=colnames)
+    if rankabove == "A":
+        df = df[(df["FoR1"] == category) & (df["Rank"] == "A")]
+    elif rankabove == "B":
+        df = df[(df["FoR1"] == category) & ((df["Rank"] == "A") | (df["Rank"] == "B"))]
+    elif rankabove == "C":
+        df = df[(df["FoR1"] == category) & ((df["Rank"] == "A") | (df["Rank"] == "B") | (df["Rank"] == "C"))]
+    data = df[["Acronym"]].values.tolist();
+    return [c[0] for c in data]
 
 def find_kiise_fos(year):
     core_df = read_core_data()
