@@ -1,0 +1,129 @@
+{% load static %}
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>CMP-RANK</title>
+
+  <!-- Custom fonts for this template-->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+  <!-- Custom styles for this template-->
+  <link href="{% static 'css/sb-admin-2.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/cmp-rank.css' %}" rel="stylesheet">
+
+  <!-- Bootstrap core JavaScript-->
+  <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <!-- Core plugin JavaScript-->
+  <script src="{% static 'vendor/jquery-easing/jquery.easing.min.js' %}"></script>
+  <!-- Custom scripts for all pages-->
+  <script src="{% static 'js/sb-admin-2.min.js' %}"></script>
+
+</head>
+
+<body id="page-top">
+
+  <!-- Page Wrapper -->
+  <div id="wrapper">
+
+    <!-- Sidebar -->
+    <ul class="navbar-nav navbar-light bg-white sidebar">
+      <!-- Nav Item - Pages Collapse Menu -->
+      {% for k, v in categories.items %}
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#{{k}}" aria-expanded="false" aria-controls="collapseTwo">
+          <i class="fa fa-fw fa-cog"></i>
+          <span>{{ v.name }}</span>
+        </a>
+        <div id="{{k}}" class="collapse show" aria-labelledby="headingTwo">
+          {% for vv in v.list %}
+          <div class="bg-white collapse-inner rounded">
+            <h6 class="collapse-header">{{ vv }}</h6>
+            <div class="btn-group btn-group-toggle" role="group" data-toggle="buttons">
+              {% for rr in v.rank %}
+              <label class="btn btn-rank btn-outline-secondary">
+                <input type="radio" onclick="rankBtnClicked(this)" id="{{k}}+{{vv}}+{{rr}}"> {{rr}}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+      <div id="embcloud" style="width:100%; height:100%;">
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
+<script src="{% static 'js/embcloud.js' %}"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-contour.v1.min.js"></script>
+<script>
+var canvas = document.getElementById('embcloud');
+var width = canvas.offsetWidth, height = $(window).height();
+var data = {{ input_data|safe }};
+embCloud = new EmbCloud("embcloud", width, height);
+embCloud.drawCloud(data);
+
+function rankBtnClicked(event) {
+  var names = event.id.split("+");
+  console.log(names);
+  $.ajax({
+    type: "POST",
+    url: "/get_conf_list",
+    data: {
+      "type": names[0],
+      "category": names[1],
+      "rank": names[2]
+    },
+    success: function (result) {
+      selected_confs = result["conflist"];
+      console.log("selected_confs", selected_confs);
+      embCloud.selectConf(result["gid"], selected_confs)
+    },
+    error: function (result) {
+      console.log("error");
+    }
+  });
+}
+
+function showConfInfo(cname) {
+  console.log("showConfInfo", cname);
+  $.ajax({
+    type: "POST",
+    url: "/get_conf_info",
+    data: {
+      "name": cname,
+    },
+    success: function (result) {
+      console.log(cname, "paperCount:", result["paperCount"]);
+      for (var v in result["topCountries"]) {
+        var c = result["topCountries"][v];
+        if (!c[0]) continue;
+        console.log(c[0], c[1].toFixed(2));
+      }
+    },
+    error: function (result) {
+      console.log("error");
+    }
+  });
+}
+</script>
