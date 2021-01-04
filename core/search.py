@@ -2,7 +2,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, Q
 from operator import itemgetter
 
-ES_SERVER = "130.56.248.78:9200"
+ES_SERVER = "localhost:9200"
 client = Elasticsearch(ES_SERVER, timeout=600)
 
 def es_search_conference_name(name, title):

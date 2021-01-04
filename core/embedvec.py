@@ -250,7 +250,7 @@ def generate_year_country_summary():
             csv_writer.writerow(citem)
 
 
-generate_year_country_summary()
+# generate_year_country_summary()
 
 # for cc in ai_conf.keys():
 #     if os.path.exists("../data/year_country/{}_year_country.json".format(cc)):

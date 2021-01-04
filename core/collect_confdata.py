@@ -1,4 +1,4 @@
-import os,sys,json
+import os,sys,json,csv
 from core.search import *
 from core.conf_names import *
 from collections import Counter
@@ -39,8 +39,22 @@ def refine_conf_data(conf_acronym):
     with open("../data/conferences/{}_papers_new.json".format(conf_acronym), "w") as outfile:
         json.dump(data, outfile)
 
-for cc, ctitle in ai_conf.items():
+
+def read_recent_ranking():
+    csvreader = csv.reader(open('../data/CORE/conf2020.csv'))
+    core_2020_conf_list = {}
+    for r in csvreader:
+        core_2020_conf_list[r[2]] = {
+            "fullname":r[1],
+            "rank":r[4],
+            "fos":r[6]
+        }
+    return core_2020_conf_list
+
+conference_list = read_recent_ranking()
+for cc, value in conference_list.items():
     if os.path.exists("../data/conferences/{}_papers.json".format(cc)):
-        print("File exists", cc)
-        continue
-    collect_conf_papers(cc, ctitle)
+        print(cc, "File exists")
+    else:
+        print(cc, value["fullname"])
+        collect_conf_papers(cc, value["fullname"])
