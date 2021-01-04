@@ -9,10 +9,12 @@ import numpy as np
 
 def collect_conf_papers(conf_acronym, conf_title):
     conf = es_search_conference_name(conf_acronym, conf_title)
+    if not conf:
+        return
     conf_id = conf["ConferenceSeriesId"]
     conf_papercnt = conf["PaperCount"]
     papers = es_search_papers_from_confid(conf_id, conf_papercnt)
-    print(len(papers))
+    print(conf_acronym, conf_id, len(papers))
 
     data = []
     for i, p in enumerate(papers):
