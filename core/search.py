@@ -181,7 +181,7 @@ def es_get_paper_fos(paperid):
     if result:
         data = [res["_source"] for res in result]
     else:
-        print("[es_get_paper_fos] no result", authorid)
+        print("[es_get_paper_fos] no result", paperid)
     return data
 
 def es_get_fos_level(fosids):

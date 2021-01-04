@@ -30,7 +30,6 @@ ai_conf = {
     "GECCO": "Genetic and Evolutionary Computation Conference",
     "FUZZ-IEEE": "IEEE International Conference on Fuzzy Systems",
     "CADE": "Conference on Automated Deduction",
-    "ACCS": "Conference Cognitive Science",
     "EC": "Economics and Computation",
     "FOGA": "Foundations of Genetic Algorithms",
     "ICARCV": "International Conference on Control, Automation, Robotics and Vision",

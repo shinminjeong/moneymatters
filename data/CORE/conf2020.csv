@@ -265,8 +265,7 @@
 644,IEEE International Conference on Distributed Computing in Sensor Systems,DCOSS,CORE2020,B,No,4606,,
 2047,IEEE International Conference on Document Analysis and Recognition,ICDAR,CORE2020,A,Yes,4605,,
 648,IEEE International Conference on e-Science and Grid Computing,e-Science,CORE2020,A,No,4606,4601,4612
-1472,"IEEE international conference on ehealth networking applications and
- services (was International Workshop on Enterprise Networking and Computing in Health Care Industry; changed 2006)",HealthCom,CORE2020,C,Yes,4601,,
+1472,"IEEE international conference on ehealth networking applications and services (was International Workshop on Enterprise Networking and Computing in Health Care Industry; changed 2006)",HealthCom,CORE2020,C,Yes,4601,,
 646,IEEE International Conference on Engineering of Complex Computer Systems,ICECCS,CORE2020,A,No,4612,4606,
 649,IEEE International Conference on Fuzzy Systems,FUZZ-IEEE,CORE2020,A,No,4602,,
 650,IEEE International Conference on Global Software Engineering,ICGSE,CORE2020,C,No,4612,,
@@ -610,8 +609,7 @@
 1241,International Conference on the Statistical Analysis of Textual Data,JADT,CORE2020,C,No,4602,,
 1242,International Conference on the Theory and Application of Cryptographic Techniques,EuroCrypt,CORE2020,A*,No,4604,,
 1243,International Conference on the Theory and Application of Cryptology and Information Security,ASIACRYPT,CORE2020,A,Yes,4604,,
-2202,"International Conference on the Theory of Information Retrieval
-",ICTIR,CORE2020,Unranked,Yes,4605,,
+2202,International Conference on the Theory of Information Retrieval,ICTIR,CORE2020,Unranked,Yes,4605,,
 1246,International Conference on Theorem Proving with Analytic Tableaux and Related Methods,TABLEAUX,CORE2020,A,No,4613,,
 1250,International Conference on Theory and Applications of Satisfiability Testing,SAT,CORE2020,A,No,4602,,
 2013,International Conference on Theory and Practice of Digital Libraries (was ECDL until 2010),TPDL,CORE2020,B,Yes,4605,,
