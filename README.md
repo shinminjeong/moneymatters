@@ -1,9 +1,21 @@
+## Conference ranking analysis
+
+### CORE Conference Ranking
+http://portal.core.edu.au/conf-ranks/
+
+### CCF (China) Ranking
+https://www.ccf.org.cn/Academic_Evaluation/By_category/
+
+### KIISE (S.Korea) Ranking
+http://www.kiise.or.kr/academy/main/getContent.fa?content_no=74&MENU_ID=130300
+
+
+
 ## Grant analysis
 
 ### National Science Foundation (NSF)
   - NSF Award search (FastLane): https://www.nsf.gov/awardsearch/
   - NSF Awards API: https://www.research.gov/common/webapi/awardapisearch-v1.htm
-
 
 #### Issues (1)
 
