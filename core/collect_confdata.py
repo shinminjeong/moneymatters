@@ -27,6 +27,7 @@ def collect_conf_papers(conf_acronym, conf_title):
         print(conf_acronym, "{}/{}".format(i+1, len(papers)), pid)
         data.append(pinfo)
 
+    conf_acronym = conf_acronym.replace("/", "-")
     with open("../data/conferences/{}_papers.json".format(conf_acronym), "w") as outfile:
         json.dump(data, outfile)
 
