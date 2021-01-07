@@ -2,8 +2,14 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, Q
 from operator import itemgetter
 
-ES_SERVER = "localhost:9200"
+ES_SERVER = "115.146.86.238:9200"
 client = Elasticsearch(ES_SERVER, timeout=600)
+
+def es_get_all_affiliations():
+    s = Search(using=client, index="affiliations")
+    s = s.source(["AffiliationId"])
+    ids = [h.meta.id for h in s.scan()]
+    return ids
 
 def es_search_conference_name(name, title):
     s = Search(using=client, index="conferenceseries")

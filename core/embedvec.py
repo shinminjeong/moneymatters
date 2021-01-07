@@ -1,9 +1,10 @@
-import os, csv, json, itertools
+import os, csv, json
 import numpy as np
 from core.search import *
 from core.conf_names import *
 from core.core_utils import *
 from collections import Counter
+from itertools import chain
 from datetime import datetime
 from elasticsearch import Elasticsearch
 from multiprocessing import Pool
@@ -30,7 +31,7 @@ def extract_conf_data(cc):
     fosscores = {}
     affscores = {}
     for p in confpapers:
-        if p["Year"] < 2010: # consider papers after 2010
+        if p["Year"] < 2000: # consider papers after 2010
             continue
 
         # calculate affiliation -- normalised by number of authors
@@ -131,7 +132,7 @@ def generate_conf_summary(cc):
 def extract_conf_data_year(cc):
     confpapers = json.load(open("../data/conferences/{}_papers.json".format(cc), "r"))
 
-    years = range(2008,2021,1)
+    years = range(2000,2021,1)
     data = {}
     for y in years:
         fosscores = {}
@@ -140,14 +141,15 @@ def extract_conf_data_year(cc):
         for p in confpapers:
             if p["Year"] != y:
                 continue
+            affscores[p["PaperId"]] = {}
             pcount += 1
             # calculate affiliation -- normalised by number of authors
             for paa in p["PAA"]:
                 if "AffiliationId" not in paa:
                     continue
-                if paa["AffiliationId"] not in affscores:
-                    affscores[paa["AffiliationId"]] = 0
-                affscores[paa["AffiliationId"]] += 1/len(p["PAA"])
+                if paa["AffiliationId"] not in affscores[p["PaperId"]]:
+                    affscores[p["PaperId"]][paa["AffiliationId"]] = 0
+                affscores[p["PaperId"]][paa["AffiliationId"]] += 1/len(p["PAA"])
             # calculate field of science score
             for fos in p["FOS"]:
                 if fos["FieldOfStudyId"] not in fosscores:
@@ -161,37 +163,48 @@ def extract_conf_data_year(cc):
     return data
 
 
-AffiliationMap = {}
+def load_affiliation_map():
+    aff_filename = "../data/year_country/affiliation_map.json"
+    if os.path.exists(aff_filename):
+        return json.load(open(aff_filename))
+
+    all_ids = es_get_all_affiliations()
+    AffiliationMap = {}
+    count_inthemap = 0
+    count_search = 0
+    for i, affid in enumerate(all_ids):
+        if affid in AffiliationMap:
+            c_name = AffiliationMap[affid]
+            count_inthemap += 1
+        else:
+            c_name = search_aff_country(affid)
+            AffiliationMap[affid] = c_name
+            count_search += 1
+        print("Creating AffMap {}/{}, map:{}, new:{}".format(i+1, len(all_ids), count_inthemap, count_search))
+    with open(aff_filename, "w") as outfile:
+        json.dump(AffiliationMap, outfile)
+    return AffiliationMap
+
+
 def generate_conf_summary_year(cc):
-    global AffiliationMap
     print("generate_conf_summary_year", cc)
     data = extract_conf_data_year(cc)
     output = {}
+    AffiliationMap = load_affiliation_map()
     for year, ydata in data.items():
         affscores = ydata["PAA"]
-        aff_total = sum([v for k, v in affscores.items()])
-        aff_sorted = {k: 100*v/aff_total for k, v in sorted(affscores.items(), key=lambda item: item[1], reverse=True)}
-
         country_count = {}
-        count_inthemap = 0
-        count_search = 0
-        for affid, value in aff_sorted.items():
-            if affid in AffiliationMap:
-                c_name = AffiliationMap[affid]
-                count_inthemap += 1
-            else:
-                c_name = search_aff_country(affid)
-                AffiliationMap[affid] = c_name
-                count_search += 1
-
-            if c_name not in country_count:
-                country_count[c_name] = 0
-            country_count[c_name] += value
-        print("Map:{}, Search:{}".format(count_inthemap, count_search))
-        print(cc, year, country_count.keys())
+        for pid, pvalue in affscores.items():
+            for affid, value in pvalue.items():
+                c_name = AffiliationMap[str(affid)]
+                if c_name not in country_count:
+                    country_count[c_name] = 0
+                country_count[c_name] += value
+        # print(cc, year, len(affscores), country_count)
         output[year] = {
             "PaperCount": ydata["PaperCount"],
-            "Countries": country_count
+            "Countries": country_count,
+            "PAA": affscores,
         }
 
     with open("../data/year_country/{}_year_country.json".format(cc), "w") as outfile:
@@ -252,11 +265,14 @@ def generate_year_country_summary():
 
 # generate_year_country_summary()
 
-# for cc in ai_conf.keys():
-#     if os.path.exists("../data/year_country/{}_year_country.json".format(cc)):
-#         print("File exists", cc)
-#         continue
-#     generate_conf_summary_year(cc)
+# for cc in vision_conf.keys():
+    # if os.path.exists("../data/year_country/{}_year_country.json".format(cc)):
+    #     print("File exists", cc)
+    #     continue
+    # try:
+    #     generate_conf_summary_year(cc)
+    # except Exception as e:
+    #     print(e)
 
 # vec2d = create_emb_vector()
 # with open("../app/emb_conf.json", "w") as outfile:

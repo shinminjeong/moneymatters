@@ -1,4 +1,5 @@
-import os,sys,csv
+import os,sys,csv,json
+from collections import Counter
 import pandas as pd
 
 filenames = [
@@ -25,6 +26,25 @@ ccf_filenames = [
     "../data/CCF/ccf-2015.csv",
     "../data/CCF/ccf-2012.csv",
 ]
+
+def load_conf_paper(conflist):
+    info = {}
+    for cc in conflist:
+        filename = "../data/conferences/{}_papers.json".format(cc)
+        if os.path.exists(filename):
+            papers = json.load(open(filename))
+            info[cc] = {
+                "numpapers": len(papers),
+                "yearcounter": Counter([p["Year"] for p in papers])
+            }
+        else:
+            info[cc] = {}
+
+        filename2 = "../data/year_country/{}_year_country.json".format(cc)
+        if os.path.exists(filename2):
+            paa = json.load(open(filename2))
+            info[cc]["paa"] = paa
+    return info
 
 def read_core_data():
     colnames = ["ID", "Title", "Acronym", "Year", "Rank", "Data", "FoR1", "FoR2", "FoR3"]
@@ -120,10 +140,9 @@ def find_kiise_fos(year):
         csv_writer.writerow([c[0], c[1], c[2], c[3], c[4], c[5], fos])
 
 
-find_kiise_fos(2014)
-find_kiise_fos(2016)
-find_kiise_fos(2018)
-
+# find_kiise_fos(2014)
+# find_kiise_fos(2016)
+# find_kiise_fos(2018)
 
 # print(df)
 # print(core_df.loc[core_df["Acronym"] == "CIKM"])
