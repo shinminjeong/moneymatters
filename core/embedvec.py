@@ -265,14 +265,17 @@ def generate_year_country_summary():
 
 # generate_year_country_summary()
 
-# for cc in vision_conf.keys():
-    # if os.path.exists("../data/year_country/{}_year_country.json".format(cc)):
-    #     print("File exists", cc)
-    #     continue
-    # try:
-    #     generate_conf_summary_year(cc)
-    # except Exception as e:
-    #     print(e)
+# all_files = [f for f in os.listdir("../data/conferences")]
+# conferences = [cc.split("_")[0] for cc in all_files]
+# print(conferences)
+# for cc in conferences:
+#     if os.path.exists("../data/year_country/{}_year_country.json".format(cc)):
+#         print("File exists", cc)
+#         continue
+#     try:
+#         generate_conf_summary_year(cc)
+#     except Exception as e:
+#         print(e)
 
 # vec2d = create_emb_vector()
 # with open("../app/emb_conf.json", "w") as outfile:
